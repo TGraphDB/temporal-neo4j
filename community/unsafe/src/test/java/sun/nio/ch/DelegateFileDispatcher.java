@@ -113,6 +113,11 @@ public class DelegateFileDispatcher extends AccessibleFileDisptacher
         return delegate.truncate( fd, size );
     }
 
+    @Override
+    int allocate(FileDescriptor fileDescriptor, long l) throws IOException {
+        return delegate.allocate(fileDescriptor, l);
+    }
+
     public void release( FileDescriptor fd, long pos, long size ) throws IOException
     {
         delegate.release( fd, pos, size );
