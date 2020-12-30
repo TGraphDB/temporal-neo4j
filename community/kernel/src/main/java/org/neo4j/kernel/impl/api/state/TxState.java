@@ -264,8 +264,8 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
         };
     }
 
-    private MemTable nodeTemporalProperties;
-    private MemTable relTemporalProperties;
+    private MemTable nodeTemporalProperties = new MemTable();
+    private MemTable relTemporalProperties = new MemTable();
 
     @Override
     public MemTable getNodeTemporalProperties()
@@ -282,10 +282,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void nodeDoSetTemporalProperty(TemporalPropertyWriteOperation op)
     {
-        if(nodeTemporalProperties==null)
-        {
-            nodeTemporalProperties = new MemTable();
-        }
         InternalKey start = op.getInternalKey();
         if(op.isEndEqNow()){
             nodeTemporalProperties.addToNow( start, op.getValueSlice() );
@@ -298,10 +294,6 @@ public final class TxState implements TransactionState, RelationshipVisitor.Home
     @Override
     public void relationshipDoSetTemporalProperty(TemporalPropertyWriteOperation op)
     {
-        if(relTemporalProperties==null)
-        {
-            relTemporalProperties = new MemTable();
-        }
         InternalKey start = op.getInternalKey();
         if(op.isEndEqNow()){
             relTemporalProperties.addToNow( start, op.getValueSlice() );

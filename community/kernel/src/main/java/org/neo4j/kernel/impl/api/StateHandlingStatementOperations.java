@@ -533,7 +533,7 @@ public class StateHandlingStatementOperations
                 }
                 else
                 {
-                    return null; //Cannot get value from neo4j store
+                    return null; //Cannot get value from neo4j store, entity may not set this property.
                 }
             }
         }

@@ -368,8 +368,9 @@ public class RelationshipProxy
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
             TemporalPropertyReadOperation query = new TemporalPropertyReadOperation( this.getId(), propertyKeyId, startTime, endTime, indexId );
             Object val = statement.readOperations().relationshipGetTemporalProperty( query );
-            if(val!=null && val instanceof AggregationIndexQueryResult) return (AggregationIndexQueryResult) val;
-            else throw new TPSNHException( "null or wrong type" );
+            if(val instanceof AggregationIndexQueryResult) return (AggregationIndexQueryResult) val;
+            else if(val==null) return null;
+            else throw new TPSNHException( "wrong type" );
         }
         catch ( EntityNotFoundException | PropertyNotFoundException e )
         {
