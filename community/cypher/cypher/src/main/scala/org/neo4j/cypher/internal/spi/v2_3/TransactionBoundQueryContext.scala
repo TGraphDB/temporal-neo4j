@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.spi.v2_3
 
 import java.net.URL
 
+import org.act.temporalProperty.impl.InternalEntry
+import org.act.temporalProperty.query.range.TimeRangeQuery
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
 import org.neo4j.cypher.InternalException
@@ -50,11 +52,11 @@ import org.neo4j.kernel.api.{exceptions, _}
 import org.neo4j.kernel.impl.api.KernelStatement
 import org.neo4j.kernel.impl.core.{NodeManager, ThreadToStatementContextBridge}
 import org.neo4j.kernel.security.URLAccessValidationError
-import org.neo4j.temporal.{TemporalPropertyReadOperation, TemporalPropertyWriteOperation, TimePoint}
+import org.neo4j.temporal.{TemporalIndexManager, TemporalPropertyReadOperation, TemporalPropertyWriteOperation, TimePoint}
 import org.neo4j.tooling.GlobalGraphOperations
 
 import scala.collection.JavaConverters._
-import scala.collection.{Iterator, mutable}
+import scala.collection.{Iterator, JavaConversions, mutable}
 
 final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
                                          private var tx: Transaction,
@@ -316,6 +318,40 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
   private def kernelStatement = statement.asInstanceOf[KernelStatement]
 
+  class TPAggrMaxQuery extends TimeRangeQuery {
+    override def setValueType(valueType: String): Unit = ???
+    private var max: java.lang.Integer = Int.MinValue
+    override def onNewEntry(entry: InternalEntry): Unit = {
+      val v = entry.getValue.getInt(0)
+      if (v > max) max = v
+    }
+    override def onReturn() = max
+  }
+  class TPAggrDurationQuery extends TimeRangeQuery {
+    override def setValueType(valueType: String): Unit = ???
+    private val vMap: mutable.Map[Int, Int] = mutable.Map()
+    private var lastTime = Int.MinValue
+    private var lastVal = Int.MinValue
+    override def onNewEntry(entry: InternalEntry): Unit = {
+      val v = entry.getValue.getInt(0)
+      val t = entry.getKey
+      if (lastTime==Int.MinValue){
+        lastTime = t.getStartTime.valInt()
+        lastVal = v
+      }else{
+        val curTime = t.getStartTime.valInt()
+        val duration = curTime - lastTime + 1
+        vMap.put(lastVal, vMap.get(lastVal) match {
+          case Some(oldV) => duration + oldV
+          case None => duration
+        })
+        lastTime = curTime
+        lastVal = v
+      }
+    }
+    override def onReturn(): AnyRef = scala.collection.JavaConversions.mapAsJavaMap(vMap)
+  }
+
   class NodeOperations extends BaseOperations[Node] {
     def delete(obj: Node) {
       try {
@@ -367,6 +403,22 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       statement.readOperations().nodeGetTemporalProperty( op )
     } catch {
       case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => //ignore
+    }
+
+    def getTemporalPropertyAggr(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, aggrType: Byte): Any = try{
+      //TODO: support other aggr query
+      val op = new TemporalPropertyReadOperation(obj, propertyKey, timeStart, timeEnd, new TPAggrMaxQuery())
+      statement.readOperations().nodeGetTemporalProperty(op)
+    }
+
+    def getTemporalPropertyAggrByIndex(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, indexId: Int): Any = try{
+      val op = new TemporalPropertyReadOperation(obj, propertyKey, timeStart, timeEnd, indexId)
+      statement.readOperations().nodeGetTemporalProperty(op)
+    }
+
+    def getEntityIdListByTemporalPropertyValueIndex(propertyKey: String, timeStart: TimePoint, timeEnd: TimePoint, valMin: Int, valMax: Int): Iterator[Long] = try{
+      val results = graph.temporalIndex().nodeQueryValueIndex( timeStart, timeEnd ).propertyValRange(propertyKey, valMin, valMax).query();
+      JavaConversions.asScalaBuffer(results).toList.map(_.getEntityId).iterator
     }
 
     def getById(id: Long) = try {
@@ -438,6 +490,22 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       statement.readOperations().relationshipGetTemporalProperty( op )
     } catch {
       case _: org.neo4j.kernel.api.exceptions.EntityNotFoundException => //ignore
+    }
+
+    def getTemporalPropertyAggr(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, aggrType: Byte): Any = try{
+      //TODO: support other aggr query
+      val op = new TemporalPropertyReadOperation(obj, propertyKey, timeStart, timeEnd, new TPAggrMaxQuery())
+      statement.readOperations().relationshipGetTemporalProperty(op)
+    }
+
+    def getTemporalPropertyAggrByIndex(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, indexId: Int): Any = try{
+      val op = new TemporalPropertyReadOperation(obj, propertyKey, timeStart, timeEnd, indexId)
+      statement.readOperations().relationshipGetTemporalProperty(op)
+    }
+
+    def getEntityIdListByTemporalPropertyValueIndex(propertyKey: String, timeStart: TimePoint, timeEnd: TimePoint, valMin: Int, valMax: Int): Iterator[Long] = try{
+      val results = graph.temporalIndex().relQueryValueIndex( timeStart, timeEnd ).propertyValRange(propertyKey, valMin, valMax).query();
+      JavaConversions.asScalaBuffer(results).toList.map(_.getEntityId).iterator
     }
 
     def getById(id: Long) = try {

@@ -178,9 +178,5 @@ class UpdateCountingQueryContext(inner: QueryContext) extends DelegatingQueryCon
       inner.setTemporalProperty(obj, propertyKey, timeStart, timeEnd, value)
     }
 
-//    override def getTemporalProperty(obj: Long, propertyKey: Int, time: Int): Any = {
-//      propertiesSet.increase()
-//      inner.getTemporalProperty(obj, propertyKey, time)
-//    }
   }
 }

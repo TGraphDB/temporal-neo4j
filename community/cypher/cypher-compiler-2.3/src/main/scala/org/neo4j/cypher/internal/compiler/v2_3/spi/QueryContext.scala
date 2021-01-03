@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi.SchemaTypes.{IndexDescriptor, NodePropertyExistenceConstraint, RelationshipPropertyExistenceConstraint, UniquenessConstraint}
 import org.neo4j.cypher.internal.frontend.v2_3.SemanticDirection
 import org.neo4j.graphdb.{Node, Path, PropertyContainer, Relationship}
-import org.neo4j.temporal.TimePoint
+import org.neo4j.temporal.{TemporalIndexManager, TimePoint}
 
 /*
  * Developer note: This is an attempt at an internal graph database API, which defines a clean cut between
@@ -163,7 +163,11 @@ trait Operations[T <: PropertyContainer] {
 
   def getTemporalProperty(obj: Long, propertyKey: Int, time: TimePoint): Any
 
-//  def
+  def getTemporalPropertyAggr(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, aggrType: Byte): Any
+
+  def getTemporalPropertyAggrByIndex(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, indexId: Int): Any
+
+  def getEntityIdListByTemporalPropertyValueIndex(propertyKey: String, timeStart: TimePoint, timeEnd: TimePoint, valMin: Int, valMax: Int): Iterator[Long]
 
   def removeProperty(obj: Long, propertyKeyId: Int)
 

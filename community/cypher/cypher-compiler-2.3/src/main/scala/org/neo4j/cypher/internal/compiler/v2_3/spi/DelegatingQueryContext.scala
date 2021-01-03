@@ -194,4 +194,14 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   override def setTemporalProperty(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, value: Any): Unit = singleDbHit(inner.setTemporalProperty(obj, propertyKey, timeStart, timeEnd, value))
 
   override def getTemporalProperty(obj: Long, propertyKey: Int, time: TimePoint): Any = singleDbHit(inner.getTemporalProperty(obj, propertyKey, time))
+
+  def getTemporalPropertyAggr(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, aggrType: Byte): Any
+  = singleDbHit(inner.getTemporalPropertyAggr(obj, propertyKey, timeStart, timeEnd, aggrType))//TODO: TGraph why not many?
+
+  def getTemporalPropertyAggrByIndex(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, indexId: Int): Any
+  = singleDbHit(inner.getTemporalPropertyAggrByIndex(obj, propertyKey, timeStart, timeEnd, indexId))//TODO: TGraph why not many?
+
+  def getEntityIdListByTemporalPropertyValueIndex(propertyKey: String, timeStart: TimePoint, timeEnd: TimePoint, valMin: Int, valMax: Int): Iterator[Long]
+  = manyDbHits(inner.getEntityIdListByTemporalPropertyValueIndex(propertyKey, timeStart, timeEnd, valMin, valMax))
+
 }

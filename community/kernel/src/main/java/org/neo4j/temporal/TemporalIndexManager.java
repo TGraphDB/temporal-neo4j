@@ -135,6 +135,12 @@ public class TemporalIndexManager
             return this;
         }
 
+        public PropertyValueIntervalBuilder propertyValRange( int proId, Object valMin, Object valMax )
+        {
+            this.valInterval.put( proId, Triple.of( "[id="+proId+"]", valMin, valMax ) );
+            return this;
+        }
+
         public List<IntervalEntry> query()
         {
             try
