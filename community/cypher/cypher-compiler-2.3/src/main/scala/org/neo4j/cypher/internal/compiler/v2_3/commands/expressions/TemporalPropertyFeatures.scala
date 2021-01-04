@@ -1,5 +1,6 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
+import org.act.temporalProperty.vo.EntityPropertyId
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.TemporalContains
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.QueryState
@@ -10,6 +11,8 @@ import org.neo4j.cypher.internal.frontend.v2_3.symbols.CTBoolean
 import org.neo4j.cypher.internal.frontend.v2_3.ast.{Parameter, TimeInterval, TimePoint, TimePointInit, TimePointNow, TimePointRegular, Expression => ASTExpression}
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+
+
 
 /**
   * Created by song on 2018-08-20.
@@ -143,16 +146,38 @@ case class TemporalAggregationMinFunction(property: Expression, tStart: Expressi
 
 
 case class SnapshotValueFunction(property: Expression, tVal: Expression) extends Expression{
-  override def rewrite(f: (Expression) => Expression): Expression = TemporalContains(property, tVal).rewrite(f)
+  override def rewrite(f: (Expression) => Expression): Expression = this
 
   override def arguments: Seq[Expression] = Seq(property, tVal)
+//  // TGraph: union type definition: https://stackoverflow.com/questions/3508077/how-to-define-type-disjunction-union-types
+//  type ¬[A] = A => Nothing
+//  type ∨[T, U] = ¬[¬[T] with ¬[U]]
+//  type ¬¬[A] = ¬[¬[A]]
+//  type |∨|[T, U] = { type λ[X] = ¬¬[X] <:< (T ∨ U) }
+//  Int |∨| Float |∨| String
+
+  def temporalPropertyValue[T <: PropertyContainer](ops: Operations[T], entityId: Long, propId: Int, time: Long): Any = {
+    val v = ops.getTemporalProperty(entityId, propId, new org.neo4j.temporal.TimePoint(time.toInt))
+    v
+  }
+
+
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
-
+    (property, tVal) match {
+      case (Property(mapExpr, propertyKey), time: ParameterExpression) =>
+        val t = state.getParam(time.parameterName)
+        (mapExpr(ctx), t) match {
+          case (n: Node, time:Long) =>
+            val propId = propertyKey.getOrCreateId(state.query)
+            temporalPropertyValue(state.query.nodeOps, n.getId, propId, time)
+          case (r: Relationship, time:Long) => temporalPropertyValue(state.query.relationshipOps, r.getId, propertyKey.getOrCreateId(state.query), time)
+        }
+    }
 
   }
 
-  override protected def calculateType(symbols: SymbolTable): CypherType = CTBoolean
+  override protected def calculateType(symbols: SymbolTable): CypherType = CTInteger
 
   override def toString: String = "SnapshotValueFunc("+property.toString()+")"
 

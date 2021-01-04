@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{IdName, Lo
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{LogicalPlanningContext, LogicalPlanningSupport}
 
 object joinSolverStep {
-  val VERBOSE = false
+  val VERBOSE = true
 }
 
 case class joinSolverStep(qg: QueryGraph) extends IDPSolverStep[PatternRelationship, LogicalPlan, LogicalPlanningContext] {

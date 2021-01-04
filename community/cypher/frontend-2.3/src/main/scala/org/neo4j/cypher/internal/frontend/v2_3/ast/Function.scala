@@ -95,10 +95,13 @@ object Function {
     functions.Trim,
     functions.Type,
     functions.Upper,
-    functions.TemporalContainsFunc,
-    functions.TemporalProjectionFunc,
-    functions.SnapshotValueFunc,
-    functions.TemporalAggregationMinFunc
+    // below are temporal property functions
+    functions.ValueAtFunc,
+    functions.TemporalAggregationMinFunc,
+    functions.TemporalAggregationMaxFunc,
+    functions.TemporalAggregationDurationFunc,
+    functions.TPWithinAlwaysFunc,
+    functions.TPWithinExistsFunc
   )
 
   val lookup: Map[String, Function] = knownFunctions.map { f => (f.name.toLowerCase, f) }.toMap

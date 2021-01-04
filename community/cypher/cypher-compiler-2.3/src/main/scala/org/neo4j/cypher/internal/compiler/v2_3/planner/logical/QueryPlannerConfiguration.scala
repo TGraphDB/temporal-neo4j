@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_3.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_3.planner.act.temporalIndexIdSeekPlanner
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.greedy.projectEndpoints
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps._
@@ -40,6 +41,8 @@ object QueryPlannerConfiguration {
       outerHashJoin
     ),
     leafPlanners = LeafPlannerList(
+      temporalIndexIdSeekPlanner,
+
       argumentLeafPlanner,
 
       // MATCH n WHERE id(n) IN ... RETURN n

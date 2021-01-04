@@ -226,10 +226,13 @@ object ExpressionConverters {
       case Trim => commandexpressions.TrimFunction(toCommandExpression(invocation.arguments.head))
       case Type => commandexpressions.RelationshipTypeFunction(toCommandExpression(invocation.arguments.head))
       case Upper => commandexpressions.UpperFunction(toCommandExpression(invocation.arguments.head))
-      case TemporalContainsFunc => commandexpressions.TemporalContainsFunction(toCommandExpression(invocation.arguments.head), toCommandExpression(invocation.arguments(1)))
-      case SnapshotValueFunc => commandexpressions.SnapshotValueFunction(toCommandExpression(invocation.arguments.head), toCommandExpression(invocation.arguments(1)))
+      // follow are temporal property functions
+      case ValueAtFunc => commandexpressions.SnapshotValueFunction(toCommandExpression(invocation.arguments.head), toCommandExpression(invocation.arguments(1)))
       case TemporalAggregationMinFunc => commandexpressions.TemporalAggregationMinFunction(
         toCommandExpression(invocation.arguments.head), toCommandExpression(invocation.arguments(1)), toCommandExpression(invocation.arguments(2)))
+      case TPWithinAlwaysFunc => commandexpressions.TemporalContainsFunction(toCommandExpression(invocation.arguments.head), toCommandExpression(invocation.arguments(1)))
+
+
     }
 
   def toCommandExpression(expression: ast.Expression): CommandExpression = expression match {
@@ -266,8 +269,10 @@ object ExpressionConverters {
     case e: ast.CountStar => commandexpressions.CountStar()
     case e: ast.Property => toCommandProperty(e)
     case e: ast.Parameter => toCommandParameter(e)
+//      temporal expression
     case e: ast.TemporalContains => predicates.TemporalContains(toCommandExpression(e.lhs), toCommandExpression(e.rhs))
     case e: ast.TemporalValueExpression => commandexpressions.TemporalValueLiteral(e.items)
+//      end
     case e: ast.CaseExpression => caseExpression(e)
     case e: ast.PatternExpression => commands.PathExpression(e.pattern.asLegacyPatterns)
     case e: ast.ShortestPathExpression => commandexpressions.ShortestPathExpression(e.pattern.asLegacyPatterns(None).head)

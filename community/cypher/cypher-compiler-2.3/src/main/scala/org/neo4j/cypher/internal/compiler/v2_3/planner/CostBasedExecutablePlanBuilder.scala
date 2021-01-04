@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.ast.convert.plannerQuery.Statemen
 import org.neo4j.cypher.internal.compiler.v2_3.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{ExecutablePlanBuilder, NewRuntimeSuccessRateMonitor}
 import org.neo4j.cypher.internal.compiler.v2_3.helpers.closing
+import org.neo4j.cypher.internal.compiler.v2_3.planner.act.NaivePlanner
 import org.neo4j.cypher.internal.compiler.v2_3.planner.execution.PipeExecutionBuilderContext
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
@@ -33,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.steps.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_3.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_3.tracing.rewriters.{ApplyRewriter, RewriterCondition, RewriterStep, RewriterStepSequencer}
 import org.neo4j.cypher.internal.frontend.v2_3.ast._
-import org.neo4j.cypher.internal.frontend.v2_3.notification.{MissingLabelNotification, InternalNotification}
+import org.neo4j.cypher.internal.frontend.v2_3.notification.{InternalNotification, MissingLabelNotification}
 import org.neo4j.cypher.internal.frontend.v2_3.{InternalException, Scope, SemanticTable}
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
@@ -86,6 +87,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     val context: LogicalPlanningContext = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, semanticTable, queryGraphSolver, notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings)
 
     val plan = queryPlanner.plan(unionQuery)(context)
+    val planB = NaivePlanner.plan(unionQuery, context)
 
     val pipeBuildContext = PipeExecutionBuilderContext(metrics.cardinality, semanticTable, plannerName)
 
