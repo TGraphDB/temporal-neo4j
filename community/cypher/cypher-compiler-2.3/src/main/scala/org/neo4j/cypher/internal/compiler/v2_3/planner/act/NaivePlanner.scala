@@ -8,6 +8,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesSc
 import org.neo4j.cypher.internal.frontend.v2_3.ast.Expression
 
 import scala.collection.mutable
+import scala.collection.mutable.ListBuffer
 
 object NaivePlanner {
   def plan(query: UnionQuery, ctx: LogicalPlanningContext): LogicalPlan = {
@@ -66,8 +67,6 @@ case class N_QG(nodes: Set[String] = Set.empty, //点的id
                    selections: Set[(String, String)] = selections) = N_QG(nodes, edges, selections)
 
   def covers(other: N_QG): Boolean = other.nodes.subsetOf(nodes) && other.edges.subsetOf(edges) && other.selections.subsetOf(selections)
-
-  def canJoin(other: N_QG): Boolean = nodes.intersect(other.nodes).nonEmpty || edges.intersect(other.edges).nonEmpty
 }
 
 class N_TEntry(){
@@ -94,8 +93,8 @@ class N_DP{
     if(qg.edges.nonEmpty){
       //遍历table并试图组合扩展新的entry直到entry.key覆盖了qg
       do{
-        val candidateFromExpand = table.map(expandQG).flatten.map(e=>(e._1, N_plan.expand(e))).toSet
-        val candidateFromJoin = enumTwoDiffKey(table.keys.toArray).filter(canJoin).map(e=>(e._1, N_plan.join(e))).toSet
+        val candidateFromExpand = table.flatMap(N_plan.expand).map(N_plan.filter).toSet
+        val candidateFromJoin = enumTwoDiffKey(table.toArray).flatMap(N_plan.join).map(N_plan.filter).toSet
         updateTable(candidateFromExpand)
         updateTable(candidateFromJoin)
 
@@ -103,7 +102,7 @@ class N_DP{
           case Some(fulfill) => return fulfill._2
         }
       }while(true)
-
+      throw new RuntimeException("TCypher(NaivePlanner): should not happen")
     }else{
       if(table.size==1){
         val entry = table.toSeq.head
@@ -115,13 +114,13 @@ class N_DP{
     }
   }
 
-  def updateTable(candidates: Set[(N_QG, N_Op)]):Unit={
+  def updateTable(candidates: Set[N_Op]):Unit={
     candidates.foreach(entry=>{
-      table.get(entry._1) match {
+      table.get(entry.qg) match {
         case Some(value) =>
-          val betterOne = compareCostSelectBestCandidate(entry._2, value)
-          table.put(entry._1, betterOne)
-        case _ => table.put(entry._1, entry._2)
+          val betterOne = compareCostSelectBestCandidate(entry, value)
+          table.put(entry.qg, betterOne)
+        case _ => table.put(entry.qg, entry)
       }
     })
   }
@@ -132,31 +131,12 @@ class N_DP{
     if(cost1 < cost2) op1 else op2
   }
 
-  def expandQG(entry:(N_QG, N_Op))(implicit origin: N_QG):Seq[(N_QG, N_Op)]={
-    val cur = entry._1
-    for(edge <- origin.edges){
-
-      if(!cur.edges.contains(edge)){
-        val containStartNode = origin.nodes.contains(edge._2)
-        val containEndNode = origin.nodes.contains(edge._3)
-        if(containEndNode && containStartNode){
-
-        }
-
-      }
-    }
-
-    Seq((N_QG(),new N_Op))
-  }
-
-  def enumTwoDiffKey(arr: Array[N_QG]): IndexedSeq[(N_QG, N_QG)] ={
+  def enumTwoDiffKey(arr: Array[(N_QG, N_Op)]): IndexedSeq[(N_Op, N_Op)] ={
     for{
       i <- 0.until(arr.length - 2)
       j <- (i+1).until(arr.length - 1)
-    } yield (arr(i), arr(j))
+    } yield (arr(i)._2, arr(j)._2)
   }
-
-  def canJoin(qgs:(N_QG, N_QG)):Boolean = qgs._1.canJoin(qgs._2)
 }
 
 object N_CostModel{
@@ -168,62 +148,123 @@ object N_CostModel{
       case Some(op) => calc(op)
       case _ => 0
     }) + (opRoot match {
-      case op@O_AllNodeScan() => op.cardinality * 10
-      case op@O_NodeIndexSeek(_) => op.cardinality * 20
-      case op@O_Expand() => op.cardinality * 15
-      case op@O_Filter() => op.cardinality * 1
-      case op@O_Join() => op.cardinality * 1
-      case op@O_Projection() => op.cardinality * 1
+      case op:O_AllNodeScan => op.cardinality * 10
+      case op:O_NodeIndexSeek => op.cardinality * 20
+      case op:O_Expand => op.cardinality * 15
+      case op:O_Filter => op.cardinality * 1
+      case op:O_Join => op.cardinality * 1
+      case op:O_Projection => op.cardinality * 1
       case _ => 0
     })
   }
 }
 
 object N_Statistic{
+  def nodesWithName(name: String):Int = {
+    3
+  }
+
+  val totalNodeCnt = 100
+  val totalEdgeCnt = 200
+}
+
+object N_Cardinality{
 
 }
 
 object N_plan{
-  def allNodeScan(id:String):(N_QG, N_Op) = (N_QG(nodes = Set(id)), O_AllNodeScan())
-
-  def nodeIndexSeek(id:String, value:String):(N_QG, N_Op) = (N_QG(nodes = Set(id)), O_NodeIndexSeek(value))
-
-  def expand(entry:(N_QG, N_Op)):N_Op = {
-    O_Expand()
+  def allNodeScan(id:String):N_Op = {
+    val op = O_AllNodeScan()(qg = N_QG(nodes = Set(id)))
+    op.cardinality = 10
+    op
   }
 
-  def join(qgs:(N_QG, N_QG)):N_Op = {
-    O_Join()
+  def nodeIndexSeek(id:String, value:String):N_Op = {
+    val op = O_NodeIndexSeek(value)(qg = N_QG(nodes = Set(id), selections = Set((id, value))))
+    op.cardinality = 10
+    op
+  }
+
+  def expand(entry:(N_QG, N_Op))(implicit origin: N_QG):Seq[N_Op]={
+    val results: ListBuffer[N_Op] = ListBuffer()
+    val curQG = entry._1
+    val curOP = entry._2
+    for(r <- origin.edges){
+      if(!curQG.edges.contains(r)){
+        val containStartNode = origin.nodes.contains(r._2)
+        val containEndNode = origin.nodes.contains(r._3)
+        if(containEndNode && containStartNode){
+          val qg: N_QG = N_QG(nodes = curQG.nodes+r._3, edges=curQG.edges+r, selections = curQG.selections)
+          val root = O_Expand("into", r._1, r._2, r._3)(qg)
+          root.left = Some(curOP)
+          results.append(root)
+        }else if(containStartNode){
+          val qg: N_QG = N_QG(nodes = curQG.nodes+r._2, edges=curQG.edges+r, selections = curQG.selections)
+          val root = O_Expand("all", r._1, r._2, r._3)(qg)
+          root.left = Some(curOP)
+          results.append(root)
+        }else if(containEndNode){
+          val qg: N_QG = N_QG(nodes = curQG.nodes+r._3, edges=curQG.edges+r, selections = curQG.selections)
+          val root = O_Expand("all", r._1, r._2, r._3)(qg)
+          root.left = Some(curOP)
+          results.append(root)
+        }else{
+          throw new RuntimeException("TCypher: should not happen")
+        }
+      }
+    }
+    results
+  }
+
+  def join(ops:(N_Op, N_Op))(implicit origin: N_QG):Seq[N_Op] = {
+    val qg1 = ops._1.qg
+    val qg2 = ops._2.qg
+    val commonNodes = qg1.nodes.intersect(qg2.nodes)
+    val commonEdges = qg1.edges.intersect(qg2.edges)
+    //要求：有1或2个公共点，无公共边
+    if(commonEdges.isEmpty && (commonNodes.size==1 || commonNodes.size==2)){
+
+      Seq(O_Join()(N_QG()))
+    }else{
+      Seq()
+    }
+  }
+
+  def filter(op:N_Op)(implicit origin: N_QG):N_Op = {
+    val condition2filter = origin.selections.diff(op.qg.selections).filter(c => op.qg.nodes.contains(c._1))
+    O_Filter(condition2filter)(op.qg)
   }
 }
 
-class N_Op{
-  var parent: Option[N_Op] = None
+abstract class N_Op{
+  val qg: N_QG = ???
+//  var parent: Option[N_Op] = None
   var left: Option[N_Op] = None
   var right: Option[N_Op] = None
   var cardinality: Int = 0
+//  def execute()
 }
 
-case class O_AllNodeScan() extends N_Op {
-
-}
-
-case class O_NodeIndexSeek(value:String) extends N_Op {
+case class O_AllNodeScan()(implicit override val qg: N_QG) extends N_Op {
 
 }
 
-case class O_Expand() extends N_Op {
+case class O_NodeIndexSeek(value:String)(implicit override val qg: N_QG) extends N_Op {
 
 }
 
-case class O_Filter() extends N_Op {
+case class O_Expand(mode:String, r:String, from:String, to:String)(implicit override val qg: N_QG) extends N_Op {
 
 }
 
-case class O_Projection() extends N_Op {
+case class O_Filter(cond:Set[(String, String)])(implicit override val qg: N_QG) extends N_Op {
 
 }
 
-case class O_Join() extends N_Op {
+case class O_Projection()(implicit override val qg: N_QG) extends N_Op {
+
+}
+
+case class O_Join()(implicit override val qg: N_QG) extends N_Op {
 
 }
