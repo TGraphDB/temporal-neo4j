@@ -19,6 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_3.planner.logical
 
+import org.neo4j.cypher.internal.compiler.v2_3.planner.act.RelIdSeekByTemporalIndex
 import org.neo4j.cypher.internal.frontend.v2_3.ast.{HasLabels, Property}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans._
@@ -79,7 +80,8 @@ object CardinalityCostModel extends CostModel {
          _: NodeByIdSeek |
          _: NodeUniqueIndexSeek |
          _: NodeIndexSeek |
-         _: NodeIndexScan
+         _: NodeIndexScan |
+         _: RelIdSeekByTemporalIndex
     => SLOW_STORE
 
     case _

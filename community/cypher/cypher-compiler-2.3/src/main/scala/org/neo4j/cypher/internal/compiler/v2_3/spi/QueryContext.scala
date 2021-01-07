@@ -169,6 +169,8 @@ trait Operations[T <: PropertyContainer] {
 
   def getEntityIdListByTemporalPropertyValueIndex(propertyKey: String, timeStart: TimePoint, timeEnd: TimePoint, valMin: Int, valMax: Int): Iterator[Long]
 
+  def getTemporalPropertyValueWithin(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, vMin: Int, vMax: Int): Boolean
+
   def removeProperty(obj: Long, propertyKeyId: Int)
 
   def getProperty(obj: Long, propertyKeyId: Int): Any

@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.executionplan.builders.prepare.Ke
 import org.neo4j.cypher.internal.compiler.v2_3.executionplan.{PipeInfo, PlanFingerprint}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.{LazyTypes, _}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_3.planner.act.{RelIdSeekByTemporalIndex, RelIdSeekByTemporalIndexPipe}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{Limit, Skip, Union, _}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{InstrumentedGraphStatistics, PlanContext}
@@ -81,6 +82,9 @@ class PipeExecutionPlanBuilder(clock: Clock, monitors: Monitors) {
 
         case NodeByIdSeek(IdName(id), nodeIdExpr, _) =>
           NodeByIdSeekPipe(id, nodeIdExpr.asCommandSeekArgs)()
+
+        case RelIdSeekByTemporalIndex(IdName(id), IdName(fromNode), IdName(toNode), tStart, tEnd, propertyName, vMin, vMax, _) =>
+          RelIdSeekByTemporalIndexPipe(id, fromNode, toNode, tStart, tEnd, propertyName, vMin, vMax)()
 
         case DirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode), _) =>
           DirectedRelationshipByIdSeekPipe(id, relIdExpr.asCommandSeekArgs, toNode, fromNode)()

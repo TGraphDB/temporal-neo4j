@@ -87,7 +87,7 @@ case class CostBasedExecutablePlanBuilder(monitors: Monitors,
     val context: LogicalPlanningContext = LogicalPlanningContext(planContext, logicalPlanProducer, metrics, semanticTable, queryGraphSolver, notificationLogger = notificationLogger, useErrorsOverWarnings = useErrorsOverWarnings)
 
     val plan = queryPlanner.plan(unionQuery)(context)
-    val planB = NaivePlanner.plan(unionQuery, context)
+    val planB = NaivePlanner.plan(unionQuery, context, metrics.cardinality)
 
     val pipeBuildContext = PipeExecutionBuilderContext(metrics.cardinality, semanticTable, plannerName)
 

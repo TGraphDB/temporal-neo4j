@@ -63,7 +63,7 @@ object idSeekLeafPlanner extends LeafPlanner {
     }
   }
 
-  private def planRelTypeFilter(plan: LogicalPlan, idExpr: Identifier, relTypes: List[RelTypeName])
+  def planRelTypeFilter(plan: LogicalPlan, idExpr: Identifier, relTypes: List[RelTypeName])
                                (implicit context: LogicalPlanningContext): LogicalPlan = {
     relTypes match {
       case Seq(tpe) =>

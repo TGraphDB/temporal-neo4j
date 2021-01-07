@@ -228,11 +228,14 @@ object ExpressionConverters {
       case Upper => commandexpressions.UpperFunction(toCommandExpression(invocation.arguments.head))
       // follow are temporal property functions
       case ValueAtFunc => commandexpressions.SnapshotValueFunction(toCommandExpression(invocation.arguments.head), toCommandExpression(invocation.arguments(1)))
-      case TemporalAggregationMinFunc => commandexpressions.TemporalAggregationMinFunction(
-        toCommandExpression(invocation.arguments.head), toCommandExpression(invocation.arguments(1)), toCommandExpression(invocation.arguments(2)))
+      case TemporalAggregationMinFunc => commandexpressions.TemporalAggregationMaxFunction(
+        toCommandExpression(invocation.arguments.head),
+        toCommandExpression(invocation.arguments(1)), toCommandExpression(invocation.arguments(2)))
+
+      case TPWithinExistsFunc => commandexpressions.TPWithinExistFunction(toCommandExpression(invocation.arguments.head),
+        toCommandExpression(invocation.arguments(1)), toCommandExpression(invocation.arguments(2)),
+        toCommandExpression(invocation.arguments(3)), toCommandExpression(invocation.arguments(4)))
       case TPWithinAlwaysFunc => commandexpressions.TemporalContainsFunction(toCommandExpression(invocation.arguments.head), toCommandExpression(invocation.arguments(1)))
-
-
     }
 
   def toCommandExpression(expression: ast.Expression): CommandExpression = expression match {

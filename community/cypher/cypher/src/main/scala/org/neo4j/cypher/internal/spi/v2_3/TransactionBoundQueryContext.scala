@@ -325,10 +325,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       val v = entry.getValue.getInt(0)
       if (v > max) max = v
     }
-    override def onReturn() = max
+    override def onReturn(): Integer = max
   }
   class TPAggrDurationQuery extends TimeRangeQuery {
-    override def setValueType(valueType: String): Unit = ???
+    override def setValueType(valueType: String): Unit = {}
     private val vMap: mutable.Map[Int, Int] = mutable.Map()
     private var lastTime = Int.MinValue
     private var lastVal = Int.MinValue
@@ -350,6 +350,15 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
       }
     }
     override def onReturn(): AnyRef = scala.collection.JavaConversions.mapAsJavaMap(vMap)
+  }
+  class TPValWithinQuery(min:Int, max:Int) extends TimeRangeQuery {
+    override def setValueType(valueType: String): Unit = {}
+    private var within: java.lang.Boolean = false
+    override def onNewEntry(entry: InternalEntry): Unit = {
+      val v = entry.getValue.getInt(0)
+      if (min<=v && v<= max) within = true
+    }
+    override def onReturn():java.lang.Boolean = within
   }
 
   class NodeOperations extends BaseOperations[Node] {
@@ -419,6 +428,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     def getEntityIdListByTemporalPropertyValueIndex(propertyKey: String, timeStart: TimePoint, timeEnd: TimePoint, valMin: Int, valMax: Int): Iterator[Long] = try{
       val results = graph.temporalIndex().nodeQueryValueIndex( timeStart, timeEnd ).propertyValRange(propertyKey, valMin, valMax).query();
       JavaConversions.asScalaBuffer(results).toList.map(_.getEntityId).iterator
+    }
+
+    def getTemporalPropertyValueWithin(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, vMin: Int, vMax: Int): Boolean = try{
+      val op = new TemporalPropertyReadOperation(obj, propertyKey, timeStart, timeEnd, new TPValWithinQuery(vMin, vMax))
+      statement.readOperations().nodeGetTemporalProperty(op).asInstanceOf[Boolean]
     }
 
     def getById(id: Long) = try {
@@ -506,6 +520,12 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     def getEntityIdListByTemporalPropertyValueIndex(propertyKey: String, timeStart: TimePoint, timeEnd: TimePoint, valMin: Int, valMax: Int): Iterator[Long] = try{
       val results = graph.temporalIndex().relQueryValueIndex( timeStart, timeEnd ).propertyValRange(propertyKey, valMin, valMax).query();
       JavaConversions.asScalaBuffer(results).toList.map(_.getEntityId).iterator
+    }
+
+    def getTemporalPropertyValueWithin(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, vMin: Int, vMax: Int): Boolean = try{
+      val op = new TemporalPropertyReadOperation(obj, propertyKey, timeStart, timeEnd, new TPValWithinQuery(vMin, vMax))
+      val result = statement.readOperations().relationshipGetTemporalProperty(op)
+      result.asInstanceOf[Boolean]
     }
 
     def getById(id: Long) = try {

@@ -204,4 +204,6 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
   def getEntityIdListByTemporalPropertyValueIndex(propertyKey: String, timeStart: TimePoint, timeEnd: TimePoint, valMin: Int, valMax: Int): Iterator[Long]
   = manyDbHits(inner.getEntityIdListByTemporalPropertyValueIndex(propertyKey, timeStart, timeEnd, valMin, valMax))
 
+  def getTemporalPropertyValueWithin(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, vMin: Int, vMax: Int): Boolean =
+    singleDbHit(inner.getTemporalPropertyValueWithin(obj, propertyKey, timeStart, timeEnd, vMin, vMax))
 }

@@ -11,7 +11,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.symbols.CTBoolean
 import org.neo4j.cypher.internal.frontend.v2_3.ast.{Parameter, TimeInterval, TimePoint, TimePointInit, TimePointNow, TimePointRegular, Expression => ASTExpression}
 import org.neo4j.cypher.internal.frontend.v2_3.symbols._
 import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
-
+import org.neo4j.temporal.{TimePoint => TP}
 
 
 /**
@@ -68,19 +68,6 @@ case class TemporalValueLiteral(items: Seq[(TimeInterval, ASTExpression)]) exten
   def symbolTableDependencies = Set()
 }
 
-case class TemporalProperty() extends TemporalValueCommandExpression{
-  def apply(ctx: ExecutionContext)(implicit state: QueryState):Any = {
-
-  }
-
-  override def rewrite(f: (Expression) => Expression): Expression = f(this)
-
-  override def arguments: Seq[Expression] = Seq()
-
-  override def symbolTableDependencies: Set[String] = Set()
-}
-
-
 /**
   * Created by song on 2018-12-11.
   */
@@ -100,8 +87,38 @@ case class TemporalContainsFunction(property: Expression, tVal: Expression) exte
   override def symbolTableDependencies: Set[String] = Set()
 }
 
+case class TPWithinExistFunction(property: Expression, tStart: Expression, tEnd: Expression, vMin: Expression, vMax: Expression) extends Expression{
+  override def rewrite(f: (Expression) => Expression): Expression = this
 
-case class TemporalAggregationMinFunction(property: Expression, tStart: Expression, tEnd:Expression) extends Expression{
+  override def arguments: Seq[Expression] = Seq(property, tStart, tEnd, vMin, vMax)
+
+  override def apply(ctx: ExecutionContext)(implicit state: QueryState): Boolean = {
+    (property, tStart, tEnd, vMin, vMax) match {
+      case (Property(mapExpr, propertyKey), ParameterExpression(start), ParameterExpression(end), ParameterExpression(vmin), ParameterExpression(vmax)) =>
+        val s = state.getParam(start)
+        val e = state.getParam(end)
+        val vvmin = state.getParam(vmin)
+        val vvmax = state.getParam(vmax)
+        (mapExpr(ctx), s, e, vvmin, vvmax) match {
+          case (r: Relationship, start:Long, end:Long, v_min:Long, v_max:Long) =>
+            val propId = propertyKey.getOrCreateId(state.query)
+            temporalPropertyValueWithinExist(state.query.relationshipOps, r.getId, propId, start, end, v_min, v_max)
+        }
+    }
+  }
+
+  private def temporalPropertyValueWithinExist(ops: Operations[Relationship], rId: Long, pId:Int, s:Long, e:Long, vmin:Long, vmax:Long): Boolean = {
+    ops.getTemporalPropertyValueWithin(rId, pId, new TP(s), new TP(e), vmin.toInt, vmax.toInt)
+  }
+
+  override protected def calculateType(symbols: SymbolTable): CypherType = CTBoolean
+
+  override def toString: String = "TPWithinExistFunc("+property.toString()+")"
+
+  override def symbolTableDependencies: Set[String] = Set()
+}
+
+case class TemporalAggregationMaxFunction(property: Expression, tStart: Expression, tEnd:Expression) extends Expression{
   override def rewrite(f: (Expression) => Expression): Expression = this
 
   override def arguments: Seq[Expression] = Seq(property, tStart, tEnd)
@@ -112,10 +129,9 @@ case class TemporalAggregationMinFunction(property: Expression, tStart: Expressi
         val s = state.getParam(start.parameterName)
         val e = state.getParam(end.parameterName)
         (mapExpr(ctx), s, e) match {
-          case (n: Node, start:Long, end:Long) =>{
+          case (n: Node, start:Long, end:Long) =>
             val propId = propertyKey.getOrCreateId(state.query)
             temporalPropertyValueMatch(state.query.nodeOps, n.getId, propId, start, end)
-          }
           case (r: Relationship, start:Long, end:Long) => temporalPropertyValueMatch(state.query.relationshipOps, r.getId, propertyKey.getOrCreateId(state.query), start, end)
         }
     }
@@ -135,11 +151,9 @@ case class TemporalAggregationMinFunction(property: Expression, tStart: Expressi
     else min
   }
 
+  override protected def calculateType(symbols: SymbolTable): CypherType = CTInteger
 
-
-  override protected def calculateType(symbols: SymbolTable): CypherType = CTBoolean
-
-  override def toString: String = "SnapshotValueFunc("+property.toString()+")"
+  override def toString: String = "TPAggrMaxFunc("+property.toString()+")"
 
   override def symbolTableDependencies: Set[String] = Set()
 }
@@ -149,19 +163,11 @@ case class SnapshotValueFunction(property: Expression, tVal: Expression) extends
   override def rewrite(f: (Expression) => Expression): Expression = this
 
   override def arguments: Seq[Expression] = Seq(property, tVal)
-//  // TGraph: union type definition: https://stackoverflow.com/questions/3508077/how-to-define-type-disjunction-union-types
-//  type ¬[A] = A => Nothing
-//  type ∨[T, U] = ¬[¬[T] with ¬[U]]
-//  type ¬¬[A] = ¬[¬[A]]
-//  type |∨|[T, U] = { type λ[X] = ¬¬[X] <:< (T ∨ U) }
-//  Int |∨| Float |∨| String
 
   def temporalPropertyValue[T <: PropertyContainer](ops: Operations[T], entityId: Long, propId: Int, time: Long): Any = {
     val v = ops.getTemporalProperty(entityId, propId, new org.neo4j.temporal.TimePoint(time.toInt))
     v
   }
-
-
 
   override def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     (property, tVal) match {
@@ -174,12 +180,11 @@ case class SnapshotValueFunction(property: Expression, tVal: Expression) extends
           case (r: Relationship, time:Long) => temporalPropertyValue(state.query.relationshipOps, r.getId, propertyKey.getOrCreateId(state.query), time)
         }
     }
-
   }
 
   override protected def calculateType(symbols: SymbolTable): CypherType = CTInteger
 
-  override def toString: String = "SnapshotValueFunc("+property.toString()+")"
+  override def toString: String = "TPValueAtFunc("+property.toString()+")"
 
   override def symbolTableDependencies: Set[String] = Set()
 }

@@ -4,6 +4,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Identifier
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.{Equals, HasLabel, Not}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.{CardinalityEstimation, PlannerQuery, UnionQuery}
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.Metrics.CardinalityModel
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.plans.{AllNodesScan, Expand, IdName, LogicalPlan, ProduceResult, Projection, Selection, StrictnessMode}
 import org.neo4j.cypher.internal.frontend.v2_3.ast.Expression
 
@@ -11,7 +12,7 @@ import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
 
 object NaivePlanner {
-  def plan(query: UnionQuery, ctx: LogicalPlanningContext): LogicalPlan = {
+  def plan(query: UnionQuery, ctx: LogicalPlanningContext, cardinalityModel: CardinalityModel): LogicalPlan = {
     println(query.queries.length)
     println(query.queries.head)
     val qg = query.queries.head.graph
@@ -175,13 +176,13 @@ object N_Cardinality{
 object N_plan{
   def allNodeScan(id:String):N_Op = {
     val op = O_AllNodeScan()(qg = N_QG(nodes = Set(id)))
-    op.cardinality = 10
+    op.cardinality = N_Statistic.totalNodeCnt
     op
   }
 
   def nodeIndexSeek(id:String, value:String):N_Op = {
     val op = O_NodeIndexSeek(value)(qg = N_QG(nodes = Set(id), selections = Set((id, value))))
-    op.cardinality = 10
+    op.cardinality = N_Statistic.nodesWithName(value)
     op
   }
 

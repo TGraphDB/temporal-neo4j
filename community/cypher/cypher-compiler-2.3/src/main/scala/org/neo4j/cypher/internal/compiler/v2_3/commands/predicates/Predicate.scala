@@ -215,11 +215,10 @@ case class TemporalContains(lhs: Expression, rhs: Expression) extends Predicate{
   override def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = (lhs,rhs) match {
     case (org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Property(mapExpr, propertyKey), tv: TemporalValueLiteral) =>
       mapExpr(m) match {
-        case n: Node =>{
+        case n: Node =>
           val propId = propertyKey.getOrCreateId(state.query)
           val temporalValue = tv(m)
           Some(temporalPropertyValueMatch(state.query.nodeOps, n.getId, propId, temporalValue))
-        }
         case r: Relationship => Some(temporalPropertyValueMatch(state.query.relationshipOps, r.getId, propertyKey.getOrCreateId(state.query), tv(m)))
       }
     case (l, r) => throw new CypherTypeException(s"Expect temporal value type, but got $l and $r")
