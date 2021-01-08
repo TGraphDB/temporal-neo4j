@@ -39,6 +39,8 @@ trait PlanContext extends TokenContext {
 
   def getUniqueIndexRule(labelName: String, propertyKey: String): Option[IndexDescriptor]
 
+  def getEntitySeekTemporalIndex(tStart:Int, tEnd:Int, propertyName:String*):Boolean
+
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint]
 
   def checkNodeIndex(idxName: String)

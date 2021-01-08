@@ -7,6 +7,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.pipes.{Pipe, PipeMonitor, QuerySt
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.InternalPlanDescription.Arguments
 import org.neo4j.cypher.internal.compiler.v2_3.planDescription.{InternalPlanDescription, NoChildren, PlanDescriptionImpl}
 import org.neo4j.cypher.internal.compiler.v2_3.symbols.SymbolTable
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Parameter
 import org.neo4j.cypher.internal.frontend.v2_3.symbols.{CTNode, CTRelationship}
 import org.neo4j.graphdb.Relationship
 
@@ -14,20 +15,22 @@ import org.neo4j.graphdb.Relationship
  * copied from DirectedRelationshipByIdSeekPipe 照猫画虎
  */
 case class RelIdSeekByTemporalIndexPipe(ident: String, fromNode: String, toNode: String,
-                                        tStart: Int, tEnd: Int,
-                                        propertyName:String, vMin: Int, vMax: Int)
+                                        tStart: Parameter, tEnd: Parameter,
+                                        propertyName:String, vMin: Parameter, vMax: Parameter)
                                        (val estimatedCardinality: Option[Double] = None)
                                        (implicit pipeMonitor: PipeMonitor)
   extends Pipe
   with CollectionSupport
   with RonjaPipe {
-
+  
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     state.decorator.registerParentPipe(this)
 
-    val s = new org.neo4j.temporal.TimePoint(tStart)
-    val e = new org.neo4j.temporal.TimePoint(tEnd)
-    val idList = state.query.relationshipOps.getEntityIdListByTemporalPropertyValueIndex(propertyName, s, e, vMin, vMax)
+    val s = new org.neo4j.temporal.TimePoint(state.getParam(tStart.name).asInstanceOf[Long])
+    val e = new org.neo4j.temporal.TimePoint(state.getParam(tEnd.name).asInstanceOf[Long])
+    val v_min = state.getParam(vMin.name).asInstanceOf[Long]
+    val v_max = state.getParam(vMax.name).asInstanceOf[Long]
+    val idList = state.query.relationshipOps.getEntityIdListByTemporalPropertyValueIndex(propertyName, s, e, v_min.toInt, v_max.toInt)
 
     val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
     val ops = state.query.relationshipOps
@@ -39,9 +42,9 @@ case class RelIdSeekByTemporalIndexPipe(ident: String, fromNode: String, toNode:
 
   override def planDescriptionWithoutCardinality: InternalPlanDescription = PlanDescriptionImpl(
     id = id,
-    name = "DirectedRelationshipByIdSeekPipe",
+    name = "RelIdSeekByTemporalIndex",
     children = NoChildren,
-    arguments = Seq(Arguments.Time(tStart), Arguments.Time(tEnd), Arguments.KeyNames(Seq(propertyName)), Arguments.Time(vMin), Arguments.Time(vMax)),
+    arguments = Seq(Arguments.Expression(tStart), Arguments.Expression(tEnd), Arguments.KeyNames(Seq(propertyName)), Arguments.Expression(vMin), Arguments.Expression(vMax)),
     identifiers
   )
 

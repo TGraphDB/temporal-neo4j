@@ -228,7 +228,7 @@ object ExpressionConverters {
       case Upper => commandexpressions.UpperFunction(toCommandExpression(invocation.arguments.head))
       // follow are temporal property functions
       case ValueAtFunc => commandexpressions.SnapshotValueFunction(toCommandExpression(invocation.arguments.head), toCommandExpression(invocation.arguments(1)))
-      case TemporalAggregationMinFunc => commandexpressions.TemporalAggregationMaxFunction(
+      case TemporalAggregationMaxFunc => commandexpressions.TemporalAggregationMaxFunction(
         toCommandExpression(invocation.arguments.head),
         toCommandExpression(invocation.arguments(1)), toCommandExpression(invocation.arguments(2)))
 

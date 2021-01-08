@@ -122,4 +122,18 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
     .getDependencyResolver
     .resolveDependency(classOf[TransactionIdStore])
     .getLastCommittedTransactionId
+
+  def timeAContainsB(aStart:Int, aEnd:Int, bStart:Int, bEnd:Int):Boolean={
+    aStart<=bStart && bEnd<=aEnd
+  }
+
+  override def getEntitySeekTemporalIndex(tStart: Int, tEnd: Int, propertyName: String*): Boolean = {
+    val propertyKeyIds = propertyName.map(statement.readOperations().propertyKeyGetForName)
+    val relIndexes = gdb.temporalIndex().relIndexes()
+    val result = relIndexes.asScala.exists(i=>{
+      propertyKeyIds.forall(i.getPropertyIdList.asScala.contains) &&
+        timeAContainsB(i.getTimeStart.valInt(), i.getTimeEnd.valInt(), tStart, tEnd)
+    })
+    result
+  }
 }
