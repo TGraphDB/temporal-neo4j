@@ -43,6 +43,8 @@ public class TemporalIndexManager
         return tpStore().getNodeStore().listIndex();
     }
 
+    public boolean nodeDropIndex(long indexId){ return tpStore().getNodeStore().deleteIndex(indexId);}
+
     public PropertyValueIntervalBuilder nodeQueryValueIndex( TimePoint start, TimePoint end )
     {
         return new PropertyValueIntervalBuilder( start, end, true );
@@ -67,6 +69,8 @@ public class TemporalIndexManager
     {
         return tpStore().getRelStore().listIndex();
     }
+
+    public boolean relDropIndex(long indexId){ return tpStore().getRelStore().deleteIndex(indexId);}
 
     public PropertyValueIntervalBuilder relQueryValueIndex( TimePoint start, TimePoint end )
     {
