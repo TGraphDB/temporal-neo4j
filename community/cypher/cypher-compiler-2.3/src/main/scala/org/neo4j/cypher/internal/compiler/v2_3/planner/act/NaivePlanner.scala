@@ -70,9 +70,9 @@ case class N_QG(nodes: Set[String] = Set.empty, //点的id
   def covers(other: N_QG): Boolean = other.nodes.subsetOf(nodes) && other.edges.subsetOf(edges) && other.selections.subsetOf(selections)
 }
 
-class N_TEntry(){
-
-}
+//class N_TEntry(){
+//
+//}
 class N_DP{
   var table: mutable.Map[N_QG, N_Op] = mutable.Map()
 
@@ -169,9 +169,9 @@ object N_Statistic{
   val totalEdgeCnt = 200
 }
 
-object N_Cardinality{
-
-}
+//object N_Cardinality{
+//
+//}
 
 object N_plan{
   def allNodeScan(id:String):N_Op = {
@@ -246,26 +246,26 @@ abstract class N_Op{
 //  def execute()
 }
 
-case class O_AllNodeScan()(implicit override val qg: N_QG) extends N_Op {
+case class O_AllNodeScan()(implicit override val qg: N_QG) extends N_Op //{
 
-}
+//}
 
-case class O_NodeIndexSeek(value:String)(implicit override val qg: N_QG) extends N_Op {
+case class O_NodeIndexSeek(value:String)(implicit override val qg: N_QG) extends N_Op //{
 
-}
+//}
 
-case class O_Expand(mode:String, r:String, from:String, to:String)(implicit override val qg: N_QG) extends N_Op {
+case class O_Expand(mode:String, r:String, from:String, to:String)(implicit override val qg: N_QG) extends N_Op //{
 
-}
+//}
 
-case class O_Filter(cond:Set[(String, String)])(implicit override val qg: N_QG) extends N_Op {
+case class O_Filter(cond:Set[(String, String)])(implicit override val qg: N_QG) extends N_Op //{
 
-}
+///}
 
-case class O_Projection()(implicit override val qg: N_QG) extends N_Op {
+case class O_Projection()(implicit override val qg: N_QG) extends N_Op //{
 
-}
+//}
 
-case class O_Join()(implicit override val qg: N_QG) extends N_Op {
+case class O_Join()(implicit override val qg: N_QG) extends N_Op //{
 
-}
+//}

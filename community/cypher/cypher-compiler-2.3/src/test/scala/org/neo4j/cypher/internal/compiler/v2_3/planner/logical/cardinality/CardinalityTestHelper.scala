@@ -204,6 +204,8 @@ trait CardinalityTestHelper extends QueryGraphProducer with CardinalityCustomMat
         private def getPropertyName(propertyId: PropertyKeyId) = propertyIds.collectFirst {
           case (name, id) if id == propertyId.id => name
         }
+
+        override def cardinalityByTemporalPropertyValueIndex(st: Int, et: Int, prop: String, rangeMin: Int, rangeMax: Int): Cardinality = ???
       }
 
       val semanticTable: SemanticTable = {

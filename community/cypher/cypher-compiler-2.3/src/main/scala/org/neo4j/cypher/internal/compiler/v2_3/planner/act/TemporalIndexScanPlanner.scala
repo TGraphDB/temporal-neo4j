@@ -8,9 +8,7 @@ import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Lea
 import org.neo4j.cypher.internal.frontend.v2_3.ast.{Expression, FunctionInvocation, FunctionName, Identifier, Parameter, Property, PropertyKeyName, functions}
 import org.neo4j.cypher.internal.frontend.v2_3.ast.functions.TPWithinExistsFunc
 
-abstract class TemporalValueIndexScanPlanner extends LeafPlanner{
-
-}
+abstract class TemporalValueIndexScanPlanner extends LeafPlanner
 
 object temporalIndexIdSeekPlanner extends TemporalValueIndexScanPlanner{
   override def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext): Seq[LogicalPlan] = {
@@ -30,14 +28,16 @@ object temporalIndexIdSeekPlanner extends TemporalValueIndexScanPlanner{
         } => //条件2、4
         queryGraph.patternRelationships.find(_.name.name == entityIdName) match {
           case Some(relationship) => //条件3
+            val (startNode, endNode) = relationship.nodes
             val solved = PlannerQuery(graph = QueryGraph.empty
               .addPatternRelationship(relationship)
               .addPredicates(predicate)
               .addArgumentIds(queryGraph.argumentIds.toSeq))
-            val (startNode, endNode) = relationship.nodes
+            val f = predicate.function.get.asInstanceOf[TPWithinExistsFunc.type]
+            val solvedWithCardinality = estimatePlannerQuery(solved, f.startTime.toInt, f.endTime.toInt, prop, f.vvMin.toInt, f.vvMax.toInt)
             val seekPlan = RelIdSeekByTemporalIndex(relationship.name, startNode, endNode,
               tStart, tEnd, prop, vMin, vMax,
-              queryGraph.argumentIds)(solved)
+              queryGraph.argumentIds)(solvedWithCardinality)
             planRelTypeFilter(seekPlan, idExpr, relationship.types.toList)
           case _ => throw new RuntimeException("node temporal index not supported yet")
         }
@@ -45,10 +45,13 @@ object temporalIndexIdSeekPlanner extends TemporalValueIndexScanPlanner{
   }
 
 
-  private implicit def estimatePlannerQuery(plannerQuery: PlannerQuery)(implicit context: LogicalPlanningContext): PlannerQuery with CardinalityEstimation = {
+  private implicit def estimatePlannerQuery(plannerQuery: PlannerQuery,
+                                            tStart: Int, tEnd: Int,
+                                            prop:String, vMin:Int, vMax:Int
+                                           )(implicit context: LogicalPlanningContext): PlannerQuery with CardinalityEstimation = {
 //    val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
-//    context.planContext.statistics.
-    CardinalityEstimation.lift(plannerQuery, Cardinality(10))
+    val c = context.planContext.statistics.cardinalityByTemporalPropertyValueIndex(tStart, tEnd, prop, vMin, vMax)
+    CardinalityEstimation.lift(plannerQuery, c)
   }
 }
 

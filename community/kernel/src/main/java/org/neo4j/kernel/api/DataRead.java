@@ -167,4 +167,6 @@ interface DataRead
     Object relationshipGetTemporalProperty(TemporalPropertyReadOperation query) throws EntityNotFoundException, PropertyNotFoundException;
 
     List<IntervalEntry> getTemporalPropertyByValueIndex( TemporalIndexManager.PropertyValueIntervalBuilder builder ) throws PropertyNotFoundException;
+
+    long getTemporalPropertyCardinalityByValueIndex( TemporalIndexManager.PropertyValueIntervalBuilder builder ) throws PropertyNotFoundException;
 }

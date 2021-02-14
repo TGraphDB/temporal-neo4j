@@ -47,7 +47,7 @@ public class TemporalIndexManager
 
     public PropertyValueIntervalBuilder nodeQueryValueIndex( TimePoint start, TimePoint end )
     {
-        return new PropertyValueIntervalBuilder( start, end, true );
+        return new PropertyValueIntervalBuilder( read(),  start, end, true );
     }
 
     public long nodeCreateValueIndex( TimePoint start, TimePoint end, String... proNames )
@@ -74,7 +74,7 @@ public class TemporalIndexManager
 
     public PropertyValueIntervalBuilder relQueryValueIndex( TimePoint start, TimePoint end )
     {
-        return new PropertyValueIntervalBuilder( start, end, false );
+        return new PropertyValueIntervalBuilder(read(), start, end, false );
     }
 
     public long relCreateValueIndex( TimePoint start, TimePoint end, String... proNames )
@@ -117,31 +117,26 @@ public class TemporalIndexManager
         return TemporalPropertyStoreAdapter.getInstance();
     }
 
-    public class PropertyValueIntervalBuilder
+    public static class PropertyValueIntervalBuilder
     {
         private final TimePoint start;
         private final TimePoint end;
         private final boolean isNode;
-        private final Map<Integer,Triple<String,Object,Object>> valInterval;//proId, minVal, maxVal;
+        private final List<Triple<String,Object,Object>> valInterval;//proId, minVal, maxVal;
+        private final ReadOperations readOp;
 
-        PropertyValueIntervalBuilder(TimePoint start, TimePoint end, boolean isNode )
+        PropertyValueIntervalBuilder(ReadOperations read, TimePoint start, TimePoint end, boolean isNode)
         {
+            this.readOp = read;
             this.start = start;
             this.end = end;
             this.isNode = isNode;
-            this.valInterval = new HashMap<>();
+            this.valInterval = new ArrayList<>();
         }
 
         public PropertyValueIntervalBuilder propertyValRange( String key, Object valMin, Object valMax )
         {
-            int proId = proName2Id( key );
-            this.valInterval.put( proId, Triple.of( key, valMin, valMax ) );
-            return this;
-        }
-
-        public PropertyValueIntervalBuilder propertyValRange( int proId, Object valMin, Object valMax )
-        {
-            this.valInterval.put( proId, Triple.of( "[id="+proId+"]", valMin, valMax ) );
+            this.valInterval.add(Triple.of( key, valMin, valMax ));
             return this;
         }
 
@@ -149,7 +144,20 @@ public class TemporalIndexManager
         {
             try
             {
-                return read().getTemporalPropertyByValueIndex( this );
+
+                return readOp.getTemporalPropertyByValueIndex( this );
+            }
+            catch ( PropertyNotFoundException e )
+            {
+                throw new NotFoundException( e );
+            }
+        }
+
+        public long cardinality()
+        {
+            try
+            {
+                return readOp.getTemporalPropertyCardinalityByValueIndex( this );
             }
             catch ( PropertyNotFoundException e )
             {
@@ -159,7 +167,12 @@ public class TemporalIndexManager
 
         public Map<Integer,Triple<String,Object,Object>> getPropertyValues()
         {
-            return valInterval;
+            Map<Integer,Triple<String,Object,Object>> m = new HashMap<>();
+            for(Triple<String,Object,Object> e : valInterval){
+                int proId = readOp.propertyKeyGetForName( e.getLeft() );
+                m.put(proId, e);
+            }
+            return m;
         }
 
         public TimePoint getStart()

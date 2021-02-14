@@ -53,4 +53,6 @@ class DbStructureGraphStatistics(lookup: DbStructureLookup) extends GraphStatist
     val result = lookup.indexPropertyExistsSelectivity( label.id, property.id )
     if (result.isNaN) None else Some(Selectivity.of(result).get)
   }
+
+  override def cardinalityByTemporalPropertyValueIndex(st: Int, et: Int, prop: String, rangeMin: Int, rangeMax: Int): Cardinality = ???
 }

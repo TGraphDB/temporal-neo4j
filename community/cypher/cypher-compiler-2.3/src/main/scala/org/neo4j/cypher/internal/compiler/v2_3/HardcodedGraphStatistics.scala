@@ -45,4 +45,6 @@ class HardcodedGraphStatisticsValues extends GraphStatistics {
 
   def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
     RELATIONSHIPS_CARDINALITY
+
+  override def cardinalityByTemporalPropertyValueIndex(st: Int, et: Int, prop: String, rangeMin: Int, rangeMax: Int): Cardinality = Cardinality(10000)
 }

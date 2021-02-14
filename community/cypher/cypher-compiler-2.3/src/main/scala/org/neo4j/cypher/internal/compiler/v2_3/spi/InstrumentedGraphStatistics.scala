@@ -88,4 +88,7 @@ case class InstrumentedGraphStatistics(inner: GraphStatistics, snapshot: Mutable
     snapshot.map.getOrElseUpdate(IndexPropertyExistsSelectivity(label, property), selectivity.fold(0.0)(_.factor))
     selectivity
   }
+
+  override def cardinalityByTemporalPropertyValueIndex(st: Int, et: Int, prop: String, rangeMin: Int, rangeMax: Int): Cardinality =
+    inner.cardinalityByTemporalPropertyValueIndex(st, et, prop, rangeMin, rangeMax)
 }

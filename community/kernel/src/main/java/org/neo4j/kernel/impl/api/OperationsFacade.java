@@ -514,6 +514,20 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public long getTemporalPropertyCardinalityByValueIndex( TemporalIndexManager.PropertyValueIntervalBuilder builder ) throws PropertyNotFoundException
+    {
+        statement.assertOpen();
+        for(Integer proId : builder.getPropertyValues().keySet())
+        {
+            if ( proId == StatementConstants.NO_SUCH_PROPERTY_KEY )
+            {
+                throw new PropertyNotFoundException( proId, EntityType.NODE, 0 );
+            }
+        }
+        return dataRead().getTemporalPropertyCardinalityByIndex(statement, builder);
+    }
+
+    @Override
     public Object relationshipGetTemporalProperty(TemporalPropertyReadOperation query) throws EntityNotFoundException, PropertyNotFoundException
     {
         statement.assertOpen();

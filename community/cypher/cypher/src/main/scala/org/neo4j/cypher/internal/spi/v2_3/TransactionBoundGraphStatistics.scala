@@ -19,12 +19,14 @@
  */
 package org.neo4j.cypher.internal.spi.v2_3
 
+import org.act.temporalProperty.query.TimePointL
 import org.neo4j.cypher.internal.compiler.v2_3.planner.logical.{Cardinality, Selectivity}
 import org.neo4j.cypher.internal.compiler.v2_3.spi.{GraphStatistics, StatisticsCompletingGraphStatistics}
 import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, NameId, PropertyKeyId, RelTypeId}
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.api.{Statement => KernelStatement}
+import org.neo4j.temporal.TemporalIndexManager
 
 object TransactionBoundGraphStatistics {
   def apply(statement: KernelStatement) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(statement))
@@ -65,10 +67,18 @@ object TransactionBoundGraphStatistics {
       }
 
     def nodesWithLabelCardinality(labelId: Option[LabelId]): Cardinality =
-      statement.readOperations().countsForNode(labelId)
+      Cardinality(statement.readOperations().countsForNode(labelId))
 
     def cardinalityByLabelsAndRelationshipType(fromLabel: Option[LabelId], relTypeId: Option[RelTypeId], toLabel: Option[LabelId]): Cardinality =
-      statement.readOperations().countsForRelationship(fromLabel, relTypeId, toLabel)
+      Cardinality(statement.readOperations().countsForRelationship(fromLabel, relTypeId, toLabel))
+
+    override def cardinalityByTemporalPropertyValueIndex(st: Int, et: Int, prop: String, rangeMin: Int, rangeMax: Int): Cardinality = {
+      val builder = new TemporalIndexManager.PropertyValueIntervalBuilder(statement.readOperations(),
+        new TimePointL(st), new TimePointL(et), false)
+      builder.propertyValRange(prop, rangeMin, rangeMax)
+      Cardinality(statement.readOperations().getTemporalPropertyCardinalityByValueIndex(builder))
+    }
+
   }
 }
 

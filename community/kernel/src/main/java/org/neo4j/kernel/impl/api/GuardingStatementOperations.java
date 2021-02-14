@@ -66,6 +66,13 @@ public class GuardingStatementOperations implements
     }
 
     @Override
+    public long getTemporalPropertyCardinalityByIndex( KernelStatement statement, TemporalIndexManager.PropertyValueIntervalBuilder builder )
+    {
+        guard.check();
+        return entityReadDelegate.getTemporalPropertyCardinalityByIndex( statement, builder );
+    }
+
+    @Override
     public List<IntervalEntry> getTemporalPropertyByIndex( KernelStatement statement, TemporalIndexManager.PropertyValueIntervalBuilder builder )
     {
         guard.check();

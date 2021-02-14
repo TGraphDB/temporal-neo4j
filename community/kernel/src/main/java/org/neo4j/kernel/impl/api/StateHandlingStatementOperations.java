@@ -343,6 +343,20 @@ public class StateHandlingStatementOperations
     }
 
     @Override
+    public long getTemporalPropertyCardinalityByIndex( KernelStatement statement, TemporalIndexManager.PropertyValueIntervalBuilder builder )
+    {
+        IndexQueryRegion queryRegion = build2query( builder );
+        if ( builder.isNode() )
+        {
+            return temporalPropertyStore.nodeStore().getCardinality( queryRegion, statement.txState().getNodeTemporalProperties() );
+        }
+        else
+        {
+            return temporalPropertyStore.relStore().getCardinality( queryRegion, statement.txState().getRelationshipTemporalProperties() );
+        }
+    }
+
+    @Override
     public List<IntervalEntry> getTemporalPropertyByIndex( KernelStatement statement, TemporalIndexManager.PropertyValueIntervalBuilder builder )
     {
         IndexQueryRegion queryRegion = build2query( builder );

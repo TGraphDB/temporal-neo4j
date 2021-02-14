@@ -53,6 +53,8 @@ trait GraphStatistics {
       indexPropertyExistsSelectivity(:X, prop) = s => |MATCH (a:X)| * s = |MATCH (a:X) WHERE has(x.prop)|
    */
   def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity]
+
+  def cardinalityByTemporalPropertyValueIndex(st: Int, et: Int, prop:String, rangeMin:Int, rangeMax:Int): Cardinality
 }
 
 class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatistics {
@@ -67,6 +69,9 @@ class DelegatingGraphStatistics(delegate: GraphStatistics) extends GraphStatisti
 
   override def indexPropertyExistsSelectivity(label: LabelId, property: PropertyKeyId): Option[Selectivity] =
     delegate.indexPropertyExistsSelectivity(label, property)
+
+  override def cardinalityByTemporalPropertyValueIndex(st: Int, et: Int, prop: String, rangeMin: Int, rangeMax: Int): Cardinality =
+    delegate.cardinalityByTemporalPropertyValueIndex(st, et, prop, rangeMin, rangeMax)
 }
 
 class StatisticsCompletingGraphStatistics(delegate: GraphStatistics)

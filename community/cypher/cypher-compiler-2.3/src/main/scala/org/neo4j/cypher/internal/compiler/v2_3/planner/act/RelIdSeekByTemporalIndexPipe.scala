@@ -22,7 +22,6 @@ case class RelIdSeekByTemporalIndexPipe(ident: String, fromNode: String, toNode:
   extends Pipe
   with CollectionSupport
   with RonjaPipe {
-  
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     state.decorator.registerParentPipe(this)
 

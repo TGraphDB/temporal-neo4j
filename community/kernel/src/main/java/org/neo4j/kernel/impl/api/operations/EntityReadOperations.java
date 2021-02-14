@@ -41,6 +41,7 @@ import org.neo4j.temporal.TemporalPropertyReadOperation;
 
 public interface EntityReadOperations
 {
+    long getTemporalPropertyCardinalityByIndex(KernelStatement statement, TemporalIndexManager.PropertyValueIntervalBuilder builder);
     List<IntervalEntry> getTemporalPropertyByIndex( KernelStatement statement, TemporalIndexManager.PropertyValueIntervalBuilder builder );
     Object nodeGetTemporalProperty( KernelStatement statement, TemporalPropertyReadOperation query) throws PropertyNotFoundException, EntityNotFoundException;
     Object relationshipGetTemporalProperty( KernelStatement statement, TemporalPropertyReadOperation query ) throws PropertyNotFoundException, EntityNotFoundException;
@@ -181,6 +182,5 @@ public interface EntityReadOperations
     Cursor<NodeItem> nodeCursorGetFromUniqueIndexSeek( KernelStatement statement,
             IndexDescriptor index,
             Object value ) throws IndexBrokenKernelException, IndexNotFoundKernelException;
-
 
 }

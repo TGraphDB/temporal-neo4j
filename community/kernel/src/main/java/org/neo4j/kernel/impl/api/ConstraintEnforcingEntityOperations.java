@@ -280,6 +280,12 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations, Sc
     }
 
     @Override
+    public long getTemporalPropertyCardinalityByIndex( KernelStatement statement, TemporalIndexManager.PropertyValueIntervalBuilder builder )
+    {
+        return entityReadOperations.getTemporalPropertyCardinalityByIndex( statement, builder );
+    }
+
+    @Override
     public List<IntervalEntry> getTemporalPropertyByIndex( KernelStatement statement, TemporalIndexManager.PropertyValueIntervalBuilder builder )
     {
         return entityReadOperations.getTemporalPropertyByIndex( statement, builder );
