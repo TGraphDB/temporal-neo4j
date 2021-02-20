@@ -125,7 +125,7 @@ public class TemporalIndexManager
         private final List<Triple<String,Object,Object>> valInterval;//proId, minVal, maxVal;
         private final ReadOperations readOp;
 
-        PropertyValueIntervalBuilder(ReadOperations read, TimePoint start, TimePoint end, boolean isNode)
+        public PropertyValueIntervalBuilder(ReadOperations read, TimePoint start, TimePoint end, boolean isNode)
         {
             this.readOp = read;
             this.start = start;

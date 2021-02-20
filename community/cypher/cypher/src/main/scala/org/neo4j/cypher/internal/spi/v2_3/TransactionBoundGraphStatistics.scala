@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, NameId, PropertyKeyId, 
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.api.{Statement => KernelStatement}
-import org.neo4j.temporal.TemporalIndexManager
+import org.neo4j.temporal.{TemporalIndexManager, TimePoint}
 
 object TransactionBoundGraphStatistics {
   def apply(statement: KernelStatement) = new StatisticsCompletingGraphStatistics(new BaseTransactionBoundGraphStatistics(statement))
@@ -74,7 +74,7 @@ object TransactionBoundGraphStatistics {
 
     override def cardinalityByTemporalPropertyValueIndex(st: Int, et: Int, prop: String, rangeMin: Int, rangeMax: Int): Cardinality = {
       val builder = new TemporalIndexManager.PropertyValueIntervalBuilder(statement.readOperations(),
-        new TimePointL(st), new TimePointL(et), false)
+        new TimePoint(st), new TimePoint(et), false)
       builder.propertyValRange(prop, rangeMin, rangeMax)
       Cardinality(statement.readOperations().getTemporalPropertyCardinalityByValueIndex(builder))
     }

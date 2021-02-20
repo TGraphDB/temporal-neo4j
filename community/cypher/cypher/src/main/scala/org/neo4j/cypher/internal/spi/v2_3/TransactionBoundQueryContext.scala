@@ -321,9 +321,10 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   class TPAggrMaxQuery extends TimeRangeQuery {
     override def setValueType(valueType: String): Unit = ???
     private var max: java.lang.Integer = Int.MinValue
-    override def onNewEntry(entry: InternalEntry): Unit = {
+    override def onNewEntry(entry: InternalEntry): Boolean = {
       val v = entry.getValue.getInt(0)
       if (v > max) max = v
+      true
     }
     override def onReturn(): Integer = max
   }
@@ -332,7 +333,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
     private val vMap: mutable.Map[Int, Int] = mutable.Map()
     private var lastTime = Int.MinValue
     private var lastVal = Int.MinValue
-    override def onNewEntry(entry: InternalEntry): Unit = {
+    override def onNewEntry(entry: InternalEntry): Boolean = {
       val v = entry.getValue.getInt(0)
       val t = entry.getKey
       if (lastTime==Int.MinValue){
@@ -348,15 +349,17 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
         lastTime = curTime
         lastVal = v
       }
+      true
     }
     override def onReturn(): AnyRef = scala.collection.JavaConversions.mapAsJavaMap(vMap)
   }
   class TPValWithinQuery(min:Int, max:Int) extends TimeRangeQuery {
     override def setValueType(valueType: String): Unit = {}
     private var within: java.lang.Boolean = false
-    override def onNewEntry(entry: InternalEntry): Unit = {
+    override def onNewEntry(entry: InternalEntry): Boolean = {
       val v = entry.getValue.getInt(0)
       if (min<=v && v<= max) within = true
+      true
     }
     override def onReturn():java.lang.Boolean = within
   }

@@ -26,7 +26,7 @@ public abstract class TemporalRangeQuery implements TimeRangeQuery
     }
 
     @Override
-    public void onNewEntry(InternalEntry entry) {
+    public boolean onNewEntry(InternalEntry entry) {
         InternalKey k = entry.getKey();
         Slice v = entry.getValue();
         if(k.getValueType()==ValueType.INVALID){
@@ -34,6 +34,7 @@ public abstract class TemporalRangeQuery implements TimeRangeQuery
         }else{
             onNewEntry(k.getEntityId(), k.getPropertyId(), k.getStartTime(), callBack.readSlice(v));
         }
+        return true;
     }
 
     private interface CallBack{
