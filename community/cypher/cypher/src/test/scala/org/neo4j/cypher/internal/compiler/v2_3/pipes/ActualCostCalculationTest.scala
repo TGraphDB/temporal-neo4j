@@ -26,6 +26,8 @@ import java.util.concurrent.TimeUnit
 import org.apache.commons.math3.stat.regression.{OLSMultipleLinearRegression, SimpleRegression}
 import org.neo4j.cypher.internal.compiler.v2_3.commands.SingleQueryExpression
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_3.planner.act.RelIdSeekByTemporalIndexPipe
+import org.neo4j.cypher.internal.frontend.v2_3.ast.Parameter
 import org.neo4j.cypher.internal.frontend.v2_3.test_helpers.CypherFunSuite
 import org.neo4j.cypher.internal.frontend.v2_3.{LabelId, PropertyKeyId, SemanticDirection, ast}
 import org.neo4j.cypher.internal.spi.v2_3.TransactionBoundQueryContext.IndexSearchMonitor
@@ -56,7 +58,7 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private val PROPERTY = "prop"
   private val RELATIONSHIP = "REL"
 
-  ignore("do the test") {
+  test("do the test") {
     val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
     val graph: GraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(path))
     try {
@@ -66,10 +68,10 @@ class ActualCostCalculationTest extends CypherFunSuite {
       for (count <- 1 to STEPS) {
         setUpDb(graph, chunk)
 
-
         results.addAll("AllNodeScan", runSimulation(graph, allNodes))
         results.addAll("NodeByLabelScan", runSimulation(graph, labelScan))
         results.addAll("NodeIndexSeek", runSimulation(graph, indexSeek(graph)))
+        results.addAll("RelIdSeekByTemporalIndex", runSimulation(graph, temporalIndex(graph)))
         results.addAll("Expand", expandResult(graph))
       }
 
@@ -261,6 +263,22 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val labelToken = ast.LabelToken(LABEL.name(), LabelId(labelId))
       val propertyKeyToken = ast.PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
 
+      new NodeIndexSeekPipe(LABEL.name(), labelToken, propertyKeyToken, SingleQueryExpression(literal), IndexSeek)()
+    }
+  }
+
+  private def temporalIndex(graph: GraphDatabaseService) = {
+    graph.withTx { _ =>
+      val ctx = new TransactionBoundPlanContext(graph.statement, graph)
+      val literal = Literal(42)
+
+      val labelId = ctx.getOptLabelId(LABEL.name()).get
+      val propKeyId = ctx.getOptPropertyKeyId(PROPERTY).get
+      val labelToken = ast.LabelToken(LABEL.name(), LabelId(labelId))
+      val propertyKeyToken = ast.PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
+
+
+      RelIdSeekByTemporalIndexPipe("r", "s", "e", Parameter())
       new NodeIndexSeekPipe(LABEL.name(), labelToken, propertyKeyToken, SingleQueryExpression(literal), IndexSeek)()
     }
   }
