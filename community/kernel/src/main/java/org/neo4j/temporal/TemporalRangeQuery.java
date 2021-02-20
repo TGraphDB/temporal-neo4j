@@ -30,16 +30,15 @@ public abstract class TemporalRangeQuery implements TimeRangeQuery
         InternalKey k = entry.getKey();
         Slice v = entry.getValue();
         if(k.getValueType()==ValueType.INVALID){
-            onNewEntry(k.getEntityId(), k.getPropertyId(), k.getStartTime(), null);
+            return onNewEntry(k.getEntityId(), k.getPropertyId(), k.getStartTime(), null);
         }else{
-            onNewEntry(k.getEntityId(), k.getPropertyId(), k.getStartTime(), callBack.readSlice(v));
+            return onNewEntry(k.getEntityId(), k.getPropertyId(), k.getStartTime(), callBack.readSlice(v));
         }
-        return true;
     }
 
     private interface CallBack{
         Object readSlice(Slice slice);
     }
 
-    public abstract void onNewEntry(long entityId, int propertyId, TimePointL time, Object val);
+    public abstract boolean onNewEntry(long entityId, int propertyId, TimePointL time, Object val);
 }
