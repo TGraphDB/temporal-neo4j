@@ -212,7 +212,8 @@ public class LockManagerImpl
 
     public void releaseTemporalPropLocks(LockResource resource, LockTransaction lockTransaction)
     {
-        getRWLockForReleasing( resource, lockTransaction, 0, 1, true ).releaseAllTemporalLocks( lockTransaction );
+        RWLock lock = getRWLockForReleasing(resource, lockTransaction, 0, 0, false);
+        if(lock!=null) lock.releaseAllTemporalLocks( lockTransaction );
     }
 
     public boolean getTemporalPropWriteLock(LockResource resource, LockTransaction tx, int start, int end)
@@ -225,13 +226,15 @@ public class LockManagerImpl
         return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireTemporalSharedLock( tx, start, end ) );
     }
 
-    public void releaseAllTemporalPropReadLock(LockResource value, LockTransaction lockTransaction)
+    public void releaseAllTemporalPropReadLock(LockResource resource, LockTransaction lockTransaction)
     {
-
+        RWLock lock = getRWLockForReleasing(resource, lockTransaction, 0, 0, false);
+        if(lock!=null) lock.releaseAllTemporalLocks( lockTransaction );
     }
 
-    public void releaseAllTemporalPropWriteLock(LockResource value, LockTransaction lockTransaction)
+    public void releaseAllTemporalPropWriteLock(LockResource resource, LockTransaction lockTransaction)
     {
-
+        RWLock lock = getRWLockForReleasing(resource, lockTransaction, 0, 0, false);
+        if(lock!=null) lock.releaseAllTemporalLocks( lockTransaction );
     }
 }

@@ -19,15 +19,11 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Map;
-import java.util.Stack;
+import java.util.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.kernel.DeadlockDetectedException;
+import org.neo4j.kernel.impl.locking.community.TemporalRWLock.TResource;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 /**
@@ -126,7 +122,7 @@ public class RagManager
     synchronized void checkWaitOn( Object resource, Object tx )
         throws DeadlockDetectedException
     {
-        List<Object> lockingTxList = resourceMap.get( resource );
+        List<Object> lockingTxList = lockingTxOnResource( resource );
         if ( lockingTxList == null )
         {
             throw new LockException( "Illegal resource[" + resource
@@ -220,7 +216,7 @@ public class RagManager
             // this is ok since current tx or any other tx will wake
             // in the synchronized block and will be forced to do the deadlock
             // check once more if lock cannot be acquired
-            List<Object> lockingTxList = resourceMap.get( resource );
+            List<Object> lockingTxList = lockingTxOnResource( resource );
             if ( lockingTxList != null )
             {
                 for ( Object aLockingTxList : lockingTxList )
@@ -240,82 +236,79 @@ public class RagManager
         }
     }
 
-    public void stopWaitOn(TemporalRWLock.TLock lock, Object tx) {
+    Map<Object, TimeLine> tpTimeLine = new HashMap<>();
 
+    private TimeLine getTimeLine(TResource resource){
+        TimeLine timeLine = tpTimeLine.get(resource.propResource);
+        if(timeLine==null){
+            timeLine = new TimeLine();
+            tpTimeLine.put(resource.propResource, timeLine);
+        }
+        return timeLine;
     }
 
-    public void checkWaitOn(TemporalRWLock.TLock resource, Object tx) {
-        List<Object> lockingTxList = resourceMap.get( resource );
-        if ( lockingTxList == null )
-        {
-            throw new LockException( "Illegal resource[" + resource + "], not found in map" );
-        }
-
-        if ( waitingTxMap.get( tx ) != null )
-        {
-            throw new LockException( tx + " already waiting for resource" );
-        }
-
-        Iterator<Object> itr = lockingTxList.iterator();
-        List<Object> checkedTransactions = new LinkedList<>();
-        Stack<Object> graphStack = new Stack<>();
-        // has resource,transaction interleaved
-        graphStack.push( resource );
-        while ( itr.hasNext() )
-        {
-            Object lockingTx = itr.next();
-            // the if statement bellow is valid because:
-            // t1 -> r1 -> t1 (can happened with RW locks) is ok but,
-            // t1 -> r1 -> t1&t2 where t2 -> r1 is a deadlock
-            // think like this, we have two transactions and one resource
-            // o t1 takes read lock on r1
-            // o t2 takes read lock on r1
-            // o t1 wanna take write lock on r1 but has to wait for t2
-            // to release the read lock ( t1->r1->(t1&t2), ok not deadlock yet
-            // o t2 wanna take write lock on r1 but has to wait for t1
-            // to release read lock....
-            // DEADLOCK t1->r1->(t1&t2) and t2->r1->(t1&t2) ===>
-            // t1->r1->t2->r1->t1, t2->r1->t1->r1->t2 etc...
-            // to allow the first three steps above we check if lockingTx ==
-            // waitingTx on first level.
-            // because of this special case we have to keep track on the
-            // already "checked" tx since it is (now) legal for one type of
-            // circular reference to exist (t1->r1->t1) otherwise we may
-            // traverse t1->r1->t2->r1->t2->r1->t2... until SOE
-            // ... KISS to you too
-            if ( lockingTx.equals( tx ) )
-            {
-                continue;
+    List<Object> lockingTxOnResource( Object resource ){
+        if(resource instanceof TResource){
+            Set<Object> txList = new HashSet<>();
+            TResource re = (TResource) resource;
+            TimeLine timeline = getTimeLine(re);
+            for(TResource r : timeline.overlappedResource(re)){
+                txList.addAll(resourceMap.get(r));
             }
-            graphStack.push( lockingTx );
-            checkWaitOnRecursive( lockingTx, tx, checkedTransactions,
-                    graphStack );
-            graphStack.pop();
+            return new ArrayList<>(txList);
+        }else{
+            return resourceMap.get( resource );
         }
-
-        // ok no deadlock, we can wait on resource
-        waitingTxMap.put( tx, resource );
     }
 
-    public void lockAcquired( TemporalRWLock.TLock tLock ) {
-
+    synchronized void stopWaitOn(TemporalRWLock.TLock lock) {
+        Object resource = lock.resource;
+        Object tx = lock.tx;
+        stopWaitOn(resource, tx);
     }
 
-    synchronized void lockReleased( TemporalRWLock.TLock resource, Object tx )
+    synchronized void checkWaitOn(TemporalRWLock.TLock lock) {
+        Object resource = lock.resource;
+        Object tx = lock.tx;
+        checkWaitOn(resource, tx);
+    }
+
+    synchronized void lockAcquired( TemporalRWLock.TLock lock ) {
+        TResource resource = lock.resource;
+        Object tx = lock.tx;
+        lockAcquired(resource, tx);
+        TimeLine timeLine = getTimeLine(resource);
+        timeLine.addRes(resource);
+    }
+
+    synchronized void lockReleased( TemporalRWLock.TLock lock )
     {
-        List<Object> lockingTxList = resourceMap.get( resource );
-        if ( lockingTxList == null )
-        {
-            throw new LockException( resource + " not found in resource map" );
+        TResource resource = lock.resource;
+        Object tx = lock.tx;
+        lockReleased(resource, tx);
+        TimeLine timeline = getTimeLine(resource);
+        timeline.rmRes(resource);
+        if(timeline.resources.isEmpty()) tpTimeLine.remove(resource.propResource);
+    }
+
+    private static class TimeLine
+    {
+        private final Set<TResource> resources = new HashSet<>();
+
+        public Set<TResource> overlappedResource(TResource res) {
+            Set<TResource> result = new HashSet<>();
+            for(TResource curRes : resources){
+                if(curRes.conflict(res)) result.add(curRes);
+            }
+            return result;
         }
 
-        if ( !lockingTxList.remove( tx ) )
-        {
-            throw new LockException( tx + "not found in locking tx list" );
+        void addRes(TResource res) {
+            resources.add(res);
         }
-        if ( lockingTxList.size() == 0 )
-        {
-            resourceMap.remove( resource );
+
+        public void rmRes( TResource resource ){
+            resources.remove( resource );
         }
     }
 }
