@@ -19,20 +19,8 @@
  */
 package org.neo4j.kernel.impl.locking.community;
 
-import java.util.Iterator;
-import java.util.LinkedList;
-import java.util.ListIterator;
-
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.impl.locking.LockType;
-import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.logging.Logger;
-
-import static java.lang.Thread.currentThread;
-import static java.lang.Thread.interrupted;
-
-import static org.neo4j.kernel.impl.locking.LockType.READ;
-import static org.neo4j.kernel.impl.locking.LockType.WRITE;
 
 /**
  * A read/write lock is a lock that will allow many transactions to acquire read
@@ -62,14 +50,9 @@ import static org.neo4j.kernel.impl.locking.LockType.WRITE;
  */
 class RWLock
 {
-    public void releaseTemporalReadLock(Object tx){}
-    public void releaseTemporalWriteLock( Object tx ){}
-    public void releaseTemporalReadLock(Object tx, int start, int end){}
-    public void releaseTemporalWriteLock(Object tx, int time){}
-    public boolean tryAcquireTemporalReadLock(Object tx, int start, int end){return false;}
-    public boolean tryAcquireTemporalWriteLock(Object tx, int time){return false;}
-    public boolean acquireTemporalWriteLock(Object tx, int time){return false;}
-    public boolean acquireTemporalReadLock(Object tx, int start, int end){return false;}
+    public void releaseAllTemporalLocks(Object tx){}
+    public boolean acquireTemporalExclusiveLock(Object tx, int beginTime, int endTime){return false;}
+    public boolean acquireTemporalSharedLock(Object tx, int start, int end){return false;}
 
 
     public Object resource()
@@ -165,7 +148,6 @@ class RWLock
 	 */
     synchronized void releaseWriteLock( Object tx ) throws LockNotFoundException
     {
-
     }
 
     synchronized int getWriteCount()

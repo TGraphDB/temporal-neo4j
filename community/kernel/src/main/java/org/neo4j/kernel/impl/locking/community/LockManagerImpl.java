@@ -169,7 +169,7 @@ public class LockManagerImpl
     protected RWLock createLock( Object resource )
     {
         LockResource re = (LockResource)resource;
-        if( re.type().equals( ResourceTypes.NODE_TEMPORAL_PROP) )
+        if( re.type().equals( ResourceTypes.NODE_TEMPORAL_PROP) || re.type().equals(ResourceTypes.REL_TEMPORAL_PROP))
         {
             return new TemporalRWLock(resource, ragManager);
         }else
@@ -210,24 +210,19 @@ public class LockManagerImpl
         }
     }
 
-    public void releaseTemporalPropWriteLock(LockResource resource, LockTransaction lockTransaction, int time)
+    public void releaseTemporalPropLocks(LockResource resource, LockTransaction lockTransaction)
     {
-        getRWLockForReleasing( resource, lockTransaction, 0, 1, true ).releaseTemporalWriteLock( lockTransaction, time );
+        getRWLockForReleasing( resource, lockTransaction, 0, 1, true ).releaseAllTemporalLocks( lockTransaction );
     }
 
-    public void releaseTemporalPropReadLock(LockResource resource, LockTransaction lockTransaction, int start, int end)
+    public boolean getTemporalPropWriteLock(LockResource resource, LockTransaction tx, int start, int end)
     {
-        getRWLockForReleasing( resource, lockTransaction, 1, 0, true ).releaseTemporalReadLock( lockTransaction, start, end );
-    }
-
-    public boolean getTemporalPropWriteLock(LockResource resource, LockTransaction tx, int time)
-    {
-        return unusedResourceGuard(resource, tx, getRWLockForAcquiring( resource, tx ).acquireTemporalWriteLock( tx , time) );
+        return unusedResourceGuard(resource, tx, getRWLockForAcquiring( resource, tx ).acquireTemporalExclusiveLock( tx, start, end ) );
     }
 
     public boolean getTemporalPropReadLock(LockResource resource, LockTransaction tx, int start, int end)
     {
-        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireTemporalReadLock( tx, start, end ) );
+        return unusedResourceGuard( resource, tx, getRWLockForAcquiring( resource, tx ).acquireTemporalSharedLock( tx, start, end ) );
     }
 
     public void releaseAllTemporalPropReadLock(LockResource value, LockTransaction lockTransaction)

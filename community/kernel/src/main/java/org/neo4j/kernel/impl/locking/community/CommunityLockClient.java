@@ -90,7 +90,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void acquireTemporalPropExclusive(Locks.ResourceType resourceType, long entityId, int propertyKeyId, int time) throws AcquireLockTimeoutException {
+    public void acquireTemporalPropExclusive(Locks.ResourceType resourceType, long entityId, int propertyKeyId, int start, int end) throws AcquireLockTimeoutException {
         stateHolder.incrementActiveClients( this );
         try
         {
@@ -103,7 +103,7 @@ public class CommunityLockClient implements Locks.Client
             }else
             {
                 resource = new LockResource(resourceType, id);
-                if ( manager.getTemporalPropWriteLock(resource, lockTransaction, time) )
+                if ( manager.getTemporalPropWriteLock(resource, lockTransaction, start, end) )
                 {
                     localLocks.put(id, resource);
                 }
@@ -120,7 +120,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void releaseTemporalPropShared(Locks.ResourceType resourceType, long entityId, int propertyKeyId, int start, int end) throws AcquireLockTimeoutException {
+    public void releaseTemporalPropShared(Locks.ResourceType resourceType, long entityId, int propertyKeyId ) throws AcquireLockTimeoutException {
         stateHolder.incrementActiveClients( this );
         try
         {
@@ -134,7 +134,7 @@ public class CommunityLockClient implements Locks.Client
 
             localLocks.remove( resId );
 
-            manager.releaseTemporalPropReadLock( new LockResource( resourceType, resId ), lockTransaction, start, end );
+            manager.releaseTemporalPropLocks( new LockResource( resourceType, resId ), lockTransaction );
         }
         finally
         {
@@ -143,7 +143,7 @@ public class CommunityLockClient implements Locks.Client
     }
 
     @Override
-    public void releaseTemporalPropExclusive(Locks.ResourceType resourceType, long entityId, int propertyKeyId, int time) throws AcquireLockTimeoutException {
+    public void releaseTemporalPropExclusive(Locks.ResourceType resourceType, long entityId, int propertyKeyId) throws AcquireLockTimeoutException {
         stateHolder.incrementActiveClients( this );
         try
         {
@@ -156,7 +156,7 @@ public class CommunityLockClient implements Locks.Client
             }
             localLocks.remove( resId );
 
-            manager.releaseTemporalPropWriteLock( new LockResource( resourceType, resId ), lockTransaction, time);
+            manager.releaseTemporalPropLocks( new LockResource( resourceType, resId ), lockTransaction);
         }
         finally
         {

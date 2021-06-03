@@ -239,4 +239,83 @@ public class RagManager
             graphStack.pop();
         }
     }
+
+    public void stopWaitOn(TemporalRWLock.TLock lock, Object tx) {
+
+    }
+
+    public void checkWaitOn(TemporalRWLock.TLock resource, Object tx) {
+        List<Object> lockingTxList = resourceMap.get( resource );
+        if ( lockingTxList == null )
+        {
+            throw new LockException( "Illegal resource[" + resource + "], not found in map" );
+        }
+
+        if ( waitingTxMap.get( tx ) != null )
+        {
+            throw new LockException( tx + " already waiting for resource" );
+        }
+
+        Iterator<Object> itr = lockingTxList.iterator();
+        List<Object> checkedTransactions = new LinkedList<>();
+        Stack<Object> graphStack = new Stack<>();
+        // has resource,transaction interleaved
+        graphStack.push( resource );
+        while ( itr.hasNext() )
+        {
+            Object lockingTx = itr.next();
+            // the if statement bellow is valid because:
+            // t1 -> r1 -> t1 (can happened with RW locks) is ok but,
+            // t1 -> r1 -> t1&t2 where t2 -> r1 is a deadlock
+            // think like this, we have two transactions and one resource
+            // o t1 takes read lock on r1
+            // o t2 takes read lock on r1
+            // o t1 wanna take write lock on r1 but has to wait for t2
+            // to release the read lock ( t1->r1->(t1&t2), ok not deadlock yet
+            // o t2 wanna take write lock on r1 but has to wait for t1
+            // to release read lock....
+            // DEADLOCK t1->r1->(t1&t2) and t2->r1->(t1&t2) ===>
+            // t1->r1->t2->r1->t1, t2->r1->t1->r1->t2 etc...
+            // to allow the first three steps above we check if lockingTx ==
+            // waitingTx on first level.
+            // because of this special case we have to keep track on the
+            // already "checked" tx since it is (now) legal for one type of
+            // circular reference to exist (t1->r1->t1) otherwise we may
+            // traverse t1->r1->t2->r1->t2->r1->t2... until SOE
+            // ... KISS to you too
+            if ( lockingTx.equals( tx ) )
+            {
+                continue;
+            }
+            graphStack.push( lockingTx );
+            checkWaitOnRecursive( lockingTx, tx, checkedTransactions,
+                    graphStack );
+            graphStack.pop();
+        }
+
+        // ok no deadlock, we can wait on resource
+        waitingTxMap.put( tx, resource );
+    }
+
+    public void lockAcquired( TemporalRWLock.TLock tLock ) {
+
+    }
+
+    synchronized void lockReleased( TemporalRWLock.TLock resource, Object tx )
+    {
+        List<Object> lockingTxList = resourceMap.get( resource );
+        if ( lockingTxList == null )
+        {
+            throw new LockException( resource + " not found in resource map" );
+        }
+
+        if ( !lockingTxList.remove( tx ) )
+        {
+            throw new LockException( tx + "not found in locking tx list" );
+        }
+        if ( lockingTxList.size() == 0 )
+        {
+            resourceMap.remove( resource );
+        }
+    }
 }

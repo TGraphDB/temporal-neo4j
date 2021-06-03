@@ -30,15 +30,15 @@ public class NoOpClient implements Locks.Client
     }
 
     @Override
-    public void acquireTemporalPropExclusive(Locks.ResourceType resourceType, long entityId, int propertyKeyId, int time) throws AcquireLockTimeoutException {
+    public void acquireTemporalPropExclusive(Locks.ResourceType resourceType, long entityId, int propertyKeyId, int start, int end) throws AcquireLockTimeoutException {
     }
 
     @Override
-    public void releaseTemporalPropShared(Locks.ResourceType resourceType, long entityId, int propertyKeyId, int start, int end) throws AcquireLockTimeoutException {
+    public void releaseTemporalPropShared(Locks.ResourceType resourceType, long entityId, int propertyKeyId ) throws AcquireLockTimeoutException {
     }
 
     @Override
-    public void releaseTemporalPropExclusive(Locks.ResourceType resourceType, long entityId, int propertyKeyId, int time) throws AcquireLockTimeoutException {
+    public void releaseTemporalPropExclusive(Locks.ResourceType resourceType, long entityId, int propertyKeyId ) throws AcquireLockTimeoutException {
     }
 
     @Override

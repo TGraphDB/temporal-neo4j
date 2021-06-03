@@ -79,11 +79,11 @@ public interface Locks extends Lifecycle
     {
         void acquireTemporalPropShared( ResourceType resourceType, long entityId, int propertyKeyId, int start, int end ) throws AcquireLockTimeoutException;
 
-        void acquireTemporalPropExclusive( ResourceType resourceType, long entityId, int propertyKeyId, int time ) throws AcquireLockTimeoutException;
+        void acquireTemporalPropExclusive( ResourceType resourceType, long entityId, int propertyKeyId, int start, int end ) throws AcquireLockTimeoutException;
 
-        void releaseTemporalPropShared( ResourceType resourceType, long entityId, int propertyKeyId, int start, int end ) throws AcquireLockTimeoutException;
+        void releaseTemporalPropShared( ResourceType resourceType, long entityId, int propertyKeyId ) throws AcquireLockTimeoutException;
 
-        void releaseTemporalPropExclusive( ResourceType resourceType, long entityId, int propertyKeyId, int time ) throws AcquireLockTimeoutException;
+        void releaseTemporalPropExclusive( ResourceType resourceType, long entityId, int propertyKeyId ) throws AcquireLockTimeoutException;
 
         /**
          * Can be grabbed when there are no locks or only share locks on a resource. If the lock cannot be acquired,
