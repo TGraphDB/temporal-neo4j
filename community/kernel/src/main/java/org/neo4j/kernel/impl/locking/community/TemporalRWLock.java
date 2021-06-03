@@ -99,14 +99,11 @@ public class TemporalRWLock extends RWLock
         TxLockTemporalElement tle = getOrCreateLockElement( tLock.tx );
         try
         {
-            TLock conflict;
             waitingThreadCnt++;
-            while ( !tle.isTerminated() && (conflict = timeLine.shouldWait( tLock ))!=null)
+            while ( !tle.isTerminated() && (timeLine.shouldWait( tLock )!=null))
             {
                 ragManager.checkWaitOn( tLock );
-                synchronized (conflict) {
-                    conflict.wait();
-                }
+                wait();
                 ragManager.stopWaitOn( tLock );
             }
             if ( !tle.lockResources.contains(tLock.resource) ) { //RagManager对同一资源只能锁一次。
@@ -142,10 +139,7 @@ public class TemporalRWLock extends RWLock
             }
         }
         txLockElementMap.remove( tx );
-
-        for(TLock lock : tle.locks){
-            lock.notifyAll();
-        }
+        notifyAll();
     }
 
     public int getWriteCount()

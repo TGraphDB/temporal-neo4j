@@ -313,7 +313,7 @@ public class LockingStatementOperations implements
     public void nodeSetTemporalProperty(KernelStatement statement, TemporalPropertyWriteOperation op) throws EntityNotFoundException, ConstraintValidationKernelException
     {
         acquireTemporalExclusive(statement, NODE_TEMPORAL_PROP, op.getEntityId(), op.getProId(),
-                op.getInternalKey().getStartTime().valInt(), op.getEnd().valInt());
+                op.getInternalKey().getStartTime().valInt(), op.getEnd().isNow()?Integer.MAX_VALUE:op.getEnd().valInt());
         entityWriteDelegate.nodeSetTemporalProperty(statement, op);
     }
 
@@ -321,7 +321,7 @@ public class LockingStatementOperations implements
     public void relationshipSetTemporalProperty(KernelStatement statement, TemporalPropertyWriteOperation op) throws EntityNotFoundException, ConstraintValidationKernelException
     {
         acquireTemporalExclusive(statement, REL_TEMPORAL_PROP, op.getEntityId(), op.getProId(),
-                op.getInternalKey().getStartTime().valInt(), op.getEnd().valInt());
+                op.getInternalKey().getStartTime().valInt(), op.getEnd().isNow()?Integer.MAX_VALUE:op.getEnd().valInt());
         entityWriteDelegate.relationshipSetTemporalProperty(statement, op);
     }
 
