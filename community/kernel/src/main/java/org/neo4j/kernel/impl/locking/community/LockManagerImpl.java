@@ -212,6 +212,7 @@ public class LockManagerImpl
 
     public void releaseTemporalPropLocks(LockResource resource, LockTransaction lockTransaction)
     {
+//        System.out.println(Thread.currentThread().getName()+": free all locks");
         RWLock lock = getRWLockForReleasing(resource, lockTransaction, 0, 0, false);
         if(lock!=null) lock.releaseAllTemporalLocks( lockTransaction );
     }
@@ -228,12 +229,14 @@ public class LockManagerImpl
 
     public void releaseAllTemporalPropReadLock(LockResource resource, LockTransaction lockTransaction)
     {
+//        System.out.println(Thread.currentThread().getName()+": free all locks");
         RWLock lock = getRWLockForReleasing(resource, lockTransaction, 0, 0, false);
         if(lock!=null) lock.releaseAllTemporalLocks( lockTransaction );
     }
 
     public void releaseAllTemporalPropWriteLock(LockResource resource, LockTransaction lockTransaction)
     {
+//        System.out.println(Thread.currentThread().getName()+": free all locks");
         RWLock lock = getRWLockForReleasing(resource, lockTransaction, 0, 0, false);
         if(lock!=null) lock.releaseAllTemporalLocks( lockTransaction );
     }

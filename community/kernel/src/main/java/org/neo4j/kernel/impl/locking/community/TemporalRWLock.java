@@ -103,6 +103,7 @@ public class TemporalRWLock extends RWLock
             while ( !tle.isTerminated() && (timeLine.shouldWait( tLock )!=null))
             {
                 ragManager.checkWaitOn( tLock );
+//                System.out.println(Thread.currentThread().getName()+": wait() lock "+tLock.resource);
                 wait();
                 ragManager.stopWaitOn( tLock );
             }
@@ -296,6 +297,15 @@ public class TemporalRWLock extends RWLock
         @Override
         public int hashCode() {
             return Objects.hash(start, end, propResource);
+        }
+
+        @Override
+        public String toString() {
+            return "TResource{" +
+                    "" + start +
+                    "~" + end +
+                    ", " + propResource +
+                    '}';
         }
     }
 }

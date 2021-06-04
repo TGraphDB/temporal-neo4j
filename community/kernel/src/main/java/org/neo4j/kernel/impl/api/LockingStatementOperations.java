@@ -581,6 +581,7 @@ public class LockingStatementOperations implements
     @Override
     public void acquireTemporalExclusive(KernelStatement state, Locks.ResourceType resourceType, long resourceId, int propertyKeyId, int start, int end)
     {
+//        System.out.println(Thread.currentThread().getName()+": ack x lock on "+resourceId+"("+propertyKeyId+") from "+start+"~"+end);
         if(resourceType.equals( ResourceTypes.NODE ) )
         {
             state.locks().optimistic().acquireShared(ResourceTypes.NODE, resourceId);
@@ -594,6 +595,7 @@ public class LockingStatementOperations implements
     @Override
     public void acquireTemporalShared(KernelStatement state, Locks.ResourceType resourceType, long resourceId, int propertyKeyId, int start, int end)
     {
+//        System.out.println(Thread.currentThread().getName()+": ack s lock on "+resourceId+"("+propertyKeyId+") from "+start+"~"+end);
         if(resourceType.equals( ResourceTypes.NODE ) )
         {
             state.locks().optimistic().acquireShared(ResourceTypes.NODE, resourceId);

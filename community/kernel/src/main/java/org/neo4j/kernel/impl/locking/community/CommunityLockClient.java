@@ -64,23 +64,16 @@ public class CommunityLockClient implements Locks.Client
         stateHolder.incrementActiveClients( this );
         try
         {
-            LockResourceId id =  new LockResourceId.TemporalProp( entityId, propertyKeyId );
+            LockResourceId resId =  new LockResourceId.TemporalProp( entityId, propertyKeyId );
             Map<LockResourceId, LockResource> localLocks = localShared( resourceType );
-            LockResource resource = localLocks.get( id );
-            if( resource != null )
-            {
-                resource.acquireReference();
-            }else
-            {
-                resource = new LockResource(resourceType, id);
-                if ( manager.getTemporalPropReadLock(resource, lockTransaction, start, end) )
-                {
-                    localLocks.put(id, resource);
-                }
-                else
-                {
-                    throw new LockClientStoppedException( this );
-                }
+            LockResource resource = localLocks.get( resId );
+            if ( resource == null ) {
+                resource = new LockResource(resourceType, resId);
+            }
+            if ( manager.getTemporalPropReadLock(resource, lockTransaction, start, end) ) {
+                localLocks.put( resId, resource );
+            } else{
+                throw new LockClientStoppedException( this );
             }
         }
         finally
@@ -94,23 +87,16 @@ public class CommunityLockClient implements Locks.Client
         stateHolder.incrementActiveClients( this );
         try
         {
-            LockResourceId id =  new LockResourceId.TemporalProp( entityId, propertyKeyId );
-            Map<LockResourceId, LockResource> localLocks = localShared( resourceType );
-            LockResource resource = localLocks.get( id );
-            if( resource != null )
-            {
-                resource.acquireReference();
-            }else
-            {
-                resource = new LockResource(resourceType, id);
-                if ( manager.getTemporalPropWriteLock(resource, lockTransaction, start, end) )
-                {
-                    localLocks.put(id, resource);
-                }
-                else
-                {
-                    throw new LockClientStoppedException( this );
-                }
+            LockResourceId resId =  new LockResourceId.TemporalProp( entityId, propertyKeyId );
+            Map<LockResourceId, LockResource> localLocks = localExclusive( resourceType );
+            LockResource resource = localLocks.get( resId );
+            if ( resource == null ) {
+                resource = new LockResource(resourceType, resId);
+            }
+            if ( manager.getTemporalPropWriteLock(resource, lockTransaction, start, end) ) {
+                localLocks.put( resId, resource );
+            } else{
+                throw new LockClientStoppedException( this );
             }
         }
         finally

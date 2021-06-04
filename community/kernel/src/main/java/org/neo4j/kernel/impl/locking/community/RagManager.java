@@ -264,18 +264,21 @@ public class RagManager
     synchronized void stopWaitOn(TemporalRWLock.TLock lock) {
         Object resource = lock.resource;
         Object tx = lock.tx;
+//        System.out.println(tx+": stop wait on "+resource);
         stopWaitOn(resource, tx);
     }
 
     synchronized void checkWaitOn(TemporalRWLock.TLock lock) {
         Object resource = lock.resource;
         Object tx = lock.tx;
+//        System.out.println(tx+": check wait on "+resource);
         checkWaitOn(resource, tx);
     }
 
     synchronized void lockAcquired( TemporalRWLock.TLock lock ) {
         TResource resource = lock.resource;
         Object tx = lock.tx;
+//        System.out.println(tx+": ack lock on "+resource);
         lockAcquired(resource, tx);
         TimeLine timeLine = getTimeLine(resource);
         timeLine.addRes(resource);
@@ -285,6 +288,7 @@ public class RagManager
     {
         TResource resource = lock.resource;
         Object tx = lock.tx;
+//        System.out.println(tx+": free lock on "+resource);
         lockReleased(resource, tx);
         TimeLine timeline = getTimeLine(resource);
         timeline.rmRes(resource);
