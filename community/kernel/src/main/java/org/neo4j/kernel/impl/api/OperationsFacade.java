@@ -83,6 +83,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.store.RelationshipIterator;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.temporal.IntervalEntry;
 import org.neo4j.temporal.TemporalIndexManager;
 import org.neo4j.temporal.TemporalPropertyReadOperation;
@@ -488,6 +489,8 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         {
             return null;
         }
+        locking().acquireTemporalShared(statement, ResourceTypes.NODE_TEMPORAL_PROP, query.getEntityId(), query.getProId(),
+                query.getStart().valInt(), query.isPointQuery() ? query.getStart().valInt() : query.getEnd().valInt());
         try ( Cursor<NodeItem> node = dataRead().nodeCursorById( statement, query.getEntityId() ) )
         {
             Object neo4jProVal = node.get().getProperty( query.getProId() ); // seems we do not need this and open cursor is also unnecessary. maybe we should write like below (the relationship)?
@@ -535,6 +538,8 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
         {
             return null;
         }
+        locking().acquireTemporalShared(statement, ResourceTypes.REL_TEMPORAL_PROP, query.getEntityId(), query.getProId(),
+                query.getStart().valInt(), query.isPointQuery() ? query.getStart().valInt() : query.getEnd().valInt());
         return dataRead().relationshipGetTemporalProperty(statement, query);
     }
 
