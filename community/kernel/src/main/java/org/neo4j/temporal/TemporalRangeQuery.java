@@ -7,6 +7,9 @@ import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.range.TimeRangeQuery;
 import org.act.temporalProperty.util.Slice;
 
+import java.util.Comparator;
+import java.util.Objects;
+
 /**
  * Created by song on 2018-07-26.
  */
@@ -17,7 +20,9 @@ public abstract class TemporalRangeQuery implements TimeRangeQuery
     @Override
     public void setValueType(String valueType) {
         switch (valueType){
-            case "INT": this.callBack = new CallBack(){ @Override public Object readSlice(Slice slice) { return slice.getInt(0); }}; return;
+            case "INT":
+                this.callBack = new CallBack(){ @Override public Object readSlice(Slice slice) { return slice.getInt(0); }};
+                return;
             case "LONG": this.callBack = new CallBack(){ @Override public Object readSlice(Slice slice) { return slice.getLong(0); }}; return;
             case "FLOAT": this.callBack = new CallBack(){ @Override public Object readSlice(Slice slice) { return slice.getFloat(0); }}; return;
             case "DOUBLE": this.callBack = new CallBack(){ @Override public Object readSlice(Slice slice) { return slice.getDouble(0); }}; return;
@@ -41,4 +46,40 @@ public abstract class TemporalRangeQuery implements TimeRangeQuery
     }
 
     public abstract boolean onNewEntry(long entityId, int propertyId, TimePointL time, Object val);
+
+    public static class ValueChangeCounter extends TemporalRangeQuery {
+        private int change = 0;
+        private Object lastVal = null;
+
+        @Override
+        public boolean onNewEntry(long entityId, int propertyId, TimePointL beginTime, Object val) {
+            if(val!=lastVal) {
+                change++;
+            }
+            lastVal = val;
+            return true;
+        }
+
+        public Object onReturn() {
+            return change;
+        }
+    }
+
+    public static class MaxInt extends TemporalRangeQuery {
+        private Integer max = null;
+
+        @Override
+        public boolean onNewEntry(long entityId, int propertyId, TimePointL beginTime, Object val) {
+            if (val != null) {
+                int vInt = (Integer) val;
+                if (max==null || vInt > max) max = vInt;
+            }
+            return true;
+        }
+
+        public Object onReturn() {
+            return max;
+        }
+    }
+
 }

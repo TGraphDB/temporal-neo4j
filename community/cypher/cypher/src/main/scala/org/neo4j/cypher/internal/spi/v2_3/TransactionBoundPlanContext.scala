@@ -136,4 +136,14 @@ class TransactionBoundPlanContext(initialStatement: Statement, val gdb: GraphDat
     })
     result
   }
+
+  override def getAggrTemporalIndex(tStart: Int, tEnd: Int, propertyName: String, indexType: Int): Boolean = {
+    val propertyKeyId = statement.readOperations().propertyKeyGetForName(propertyName)
+    val relIndexes = gdb.temporalIndex().relIndexes()
+    relIndexes.asScala.exists(i=>{
+      i.isOnline && i.getType.getId==indexType &&
+      i.getPropertyIdList.asScala.contains(propertyKeyId) &&
+        timeAContainsB(i.getTimeStart.valInt(), i.getTimeEnd.valInt(), tStart, tEnd)
+    })
+  }
 }

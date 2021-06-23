@@ -13,14 +13,14 @@ import scala.collection.mutable.ListBuffer
 
 object NaivePlanner {
   def plan(query: UnionQuery, ctx: LogicalPlanningContext, cardinalityModel: CardinalityModel): LogicalPlan = {
-    println(query.queries.length)
-    println(query.queries.head)
+//    println(query.queries.length)
+//    println(query.queries.head)
     val qg = query.queries.head.graph
-    println(qg)
-    println(query.returns)
+//    println(qg)
+//    println(query.returns)
     val cardinality = ctx.metrics.cardinality(query.queries.head, ctx.input, ctx.semanticTable)
-    println(cardinality)
-    println(ctx.metrics.cost)
+//    println(cardinality)
+//    println(ctx.metrics.cost)
 
     val plan:LogicalPlan = new LogicalPlan {
       override def lhs: Option[LogicalPlan] = ???

@@ -41,6 +41,8 @@ trait PlanContext extends TokenContext {
 
   def getEntitySeekTemporalIndex(tStart:Int, tEnd:Int, propertyName:String*):Boolean
 
+  def getAggrTemporalIndex(tStart:Int, tEnd:Int, propertyName:String, indexType:Int):Boolean
+
   def getUniquenessConstraint(labelName: String, propertyKey: String): Option[UniquenessConstraint]
 
   def checkNodeIndex(idxName: String)

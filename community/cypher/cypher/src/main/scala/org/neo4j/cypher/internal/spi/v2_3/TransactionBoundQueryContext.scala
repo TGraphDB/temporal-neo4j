@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.spi.v2_3
 import java.net.URL
 
 import org.act.temporalProperty.impl.InternalEntry
+import org.act.temporalProperty.index.value.IndexMetaData
 import org.act.temporalProperty.query.range.TimeRangeQuery
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.collection.primitive.base.Empty.EMPTY_PRIMITIVE_LONG_COLLECTION
@@ -319,7 +320,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
   private def kernelStatement = statement.asInstanceOf[KernelStatement]
 
   class TPAggrMaxQuery extends TimeRangeQuery {
-    override def setValueType(valueType: String): Unit = ???
+    override def setValueType(valueType: String): Unit = {}
     private var max: java.lang.Integer = Int.MinValue
     override def onNewEntry(entry: InternalEntry): Boolean = {
       val v = entry.getValue.getInt(0)
@@ -454,6 +455,12 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
     def isDeleted(n: Node): Boolean =
       kernelStatement.hasTxStateWithChanges && kernelStatement.txState().nodeIsDeletedInThisTx(n.getId)
+
+    override def getTemporalPropertyIndexes(): Iterable[IndexMetaData] = {
+      val indexes = graph.temporalIndex().nodeIndexes()
+      //.map(m=> (m.getType.getId, new TimePoint(m.getTimeStart.valInt()), new TimePoint(m.getTimeEnd.valInt()), m.getId.toInt))
+      JavaConversions.asScalaBuffer(indexes)
+    }
   }
 
   class RelationshipOperations extends BaseOperations[Relationship] {
@@ -522,7 +529,7 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
     def getEntityIdListByTemporalPropertyValueIndex(propertyKey: String, timeStart: TimePoint, timeEnd: TimePoint, valMin: Int, valMax: Int): Iterator[Long] = try{
       val results = graph.temporalIndex().relQueryValueIndex( timeStart, timeEnd ).propertyValRange(propertyKey, valMin, valMax).query();
-      JavaConversions.asScalaBuffer(results).toList.map(_.getEntityId).iterator
+      JavaConversions.asScalaBuffer(results).map(_.getEntityId).toSet.iterator
     }
 
     def getTemporalPropertyValueWithin(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, vMin: Int, vMax: Int): Boolean = try{
@@ -548,6 +555,11 @@ final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
 
     def isDeleted(r: Relationship): Boolean =
       kernelStatement.hasTxStateWithChanges && kernelStatement.txState().relationshipIsDeletedInThisTx(r.getId)
+
+    override def getTemporalPropertyIndexes(): Iterable[IndexMetaData] = {
+      val indexes = graph.temporalIndex().relIndexes()
+      JavaConversions.asScalaBuffer(indexes)//.map(m=> (m.getType.getId, new TimePoint(m.getTimeStart.valInt()), new TimePoint(m.getTimeEnd.valInt()), m.getId.toInt))
+    }
   }
 
   def getOrCreatePropertyKeyId(propertyKey: String) =

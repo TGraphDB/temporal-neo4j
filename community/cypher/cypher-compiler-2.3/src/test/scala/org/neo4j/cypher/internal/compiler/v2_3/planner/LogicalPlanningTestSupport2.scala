@@ -155,6 +155,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       override def bidirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node], end: EntityProducer[Node]): TraversalMatcher = ???
 
       override def getEntitySeekTemporalIndex(tStart: Int, tEnd: Int, propertyName: String*): Boolean = ???
+
+      override def getAggrTemporalIndex(tStart: Int, tEnd: Int, propertyName: String, indexType: Int): Boolean = ???
     }
 
     def planFor(queryString: String): SemanticPlan = {

@@ -42,7 +42,8 @@ object CardinalityCostModel extends CostModel {
     case  _: AllNodesScan |
          _: DirectedRelationshipByIdSeek |
          _: UndirectedRelationshipByIdSeek |
-         _: ProjectEndpoints
+         _: ProjectEndpoints |
+         _: RelIdSeekByTemporalIndex
     => FAST_STORE
 
     case _: NodeByLabelScan => 1.6
@@ -80,8 +81,7 @@ object CardinalityCostModel extends CostModel {
          _: NodeByIdSeek |
          _: NodeUniqueIndexSeek |
          _: NodeIndexSeek |
-         _: NodeIndexScan |
-         _: RelIdSeekByTemporalIndex
+         _: NodeIndexScan
     => SLOW_STORE
 
     case _

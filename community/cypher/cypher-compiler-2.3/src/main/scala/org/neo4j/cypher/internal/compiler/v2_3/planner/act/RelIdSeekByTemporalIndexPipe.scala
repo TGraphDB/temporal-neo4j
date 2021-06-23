@@ -15,8 +15,8 @@ import org.neo4j.graphdb.Relationship
  * copied from DirectedRelationshipByIdSeekPipe 照猫画虎
  */
 case class RelIdSeekByTemporalIndexPipe(ident: String, fromNode: String, toNode: String,
-                                        tStart: Parameter, tEnd: Parameter,
-                                        propertyName:String, vMin: Parameter, vMax: Parameter)
+                                        tStart: Long, tEnd: Long,
+                                        propertyName:String, vMin: Long, vMax: Long)
                                        (val estimatedCardinality: Option[Double] = None)
                                        (implicit pipeMonitor: PipeMonitor)
   extends Pipe
@@ -24,16 +24,19 @@ case class RelIdSeekByTemporalIndexPipe(ident: String, fromNode: String, toNode:
   with RonjaPipe {
   override protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
     state.decorator.registerParentPipe(this)
-
-    val s = new org.neo4j.temporal.TimePoint(state.getParam(tStart.name).asInstanceOf[Long])
-    val e = new org.neo4j.temporal.TimePoint(state.getParam(tEnd.name).asInstanceOf[Long])
-    val v_min = state.getParam(vMin.name).asInstanceOf[Long]
-    val v_max = state.getParam(vMax.name).asInstanceOf[Long]
-    val idList = state.query.relationshipOps.getEntityIdListByTemporalPropertyValueIndex(propertyName, s, e, v_min.toInt, v_max.toInt)
+//    val s = new org.neo4j.temporal.TimePoint(state.getParam(tStart.name).asInstanceOf[Long])
+//    val e = new org.neo4j.temporal.TimePoint(state.getParam(tEnd.name).asInstanceOf[Long])
+//    val v_min = state.getParam(vMin.name).asInstanceOf[Long]
+//    val v_max = state.getParam(vMax.name).asInstanceOf[Long]
+    val s = new org.neo4j.temporal.TimePoint(tStart)
+    val e = new org.neo4j.temporal.TimePoint(tEnd)
+    val v_min = vMin
+    val v_max = vMax
+    val idSet = state.query.relationshipOps.getEntityIdListByTemporalPropertyValueIndex(propertyName, s, e, v_min.toInt, v_max.toInt)
 
     val ctx = state.initialContext.getOrElse(ExecutionContext.empty)
     val ops = state.query.relationshipOps
-    idList.map(rId=>{
+    idSet.map(rId=>{
       val r:Relationship = ops.getById(rId)
       ctx.newWith3(ident, r, fromNode, r.getStartNode, toNode, r.getEndNode)
     })
@@ -43,7 +46,7 @@ case class RelIdSeekByTemporalIndexPipe(ident: String, fromNode: String, toNode:
     id = id,
     name = "RelIdSeekByTemporalIndex",
     children = NoChildren,
-    arguments = Seq(Arguments.Expression(tStart), Arguments.Expression(tEnd), Arguments.KeyNames(Seq(propertyName)), Arguments.Expression(vMin), Arguments.Expression(vMax)),
+    arguments = Seq(Arguments.Time(tStart), Arguments.Time(tEnd), Arguments.KeyNames(Seq(propertyName)), Arguments.Time(vMin), Arguments.Time(vMax)),
     identifiers
   )
 

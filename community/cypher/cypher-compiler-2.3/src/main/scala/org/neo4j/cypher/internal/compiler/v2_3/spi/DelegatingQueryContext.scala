@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.spi
 
 import java.net.URL
 
+import org.act.temporalProperty.index.value.IndexMetaData
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
 import org.neo4j.cypher.internal.compiler.v2_3.spi.SchemaTypes.IndexDescriptor
@@ -206,4 +207,6 @@ class DelegatingOperations[T <: PropertyContainer](protected val inner: Operatio
 
   def getTemporalPropertyValueWithin(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, vMin: Int, vMax: Int): Boolean =
     singleDbHit(inner.getTemporalPropertyValueWithin(obj, propertyKey, timeStart, timeEnd, vMin, vMax))
+
+  override def getTemporalPropertyIndexes(): Iterable[IndexMetaData] = singleDbHit(inner.getTemporalPropertyIndexes())
 }

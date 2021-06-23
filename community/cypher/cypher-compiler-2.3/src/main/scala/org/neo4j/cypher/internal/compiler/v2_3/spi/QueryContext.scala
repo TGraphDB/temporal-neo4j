@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_3.spi
 
 import java.net.URL
 
+import org.act.temporalProperty.index.value.IndexMetaData
 import org.neo4j.cypher.internal.compiler.v2_3.InternalQueryStatistics
 import org.neo4j.cypher.internal.compiler.v2_3.commands.expressions.{Expander, KernelPredicate}
 import org.neo4j.cypher.internal.compiler.v2_3.pipes.matching.PatternNode
@@ -164,6 +165,8 @@ trait Operations[T <: PropertyContainer] {
   def getTemporalProperty(obj: Long, propertyKey: Int, time: TimePoint): Any
 
   def getTemporalPropertyAggr(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, aggrType: Byte): Any
+
+  def getTemporalPropertyIndexes(): Iterable[IndexMetaData] //type, start, end, indexId
 
   def getTemporalPropertyAggrByIndex(obj: Long, propertyKey: Int, timeStart: TimePoint, timeEnd: TimePoint, indexId: Int): Any
 

@@ -1,5 +1,7 @@
 package org.neo4j.cypher.internal.compiler.v2_3.commands.expressions
 
+import org.act.temporalProperty.index.value.IndexMetaData
+import org.act.temporalProperty.query.aggr.AggregationIndexQueryResult
 import org.act.temporalProperty.vo.EntityPropertyId
 import org.neo4j.cypher.internal.compiler.v2_3.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_3.commands.predicates.TemporalContains
@@ -131,24 +133,47 @@ case class TemporalAggregationMaxFunction(property: Expression, tStart: Expressi
         (mapExpr(ctx), s, e) match {
           case (n: Node, start:Long, end:Long) =>
             val propId = propertyKey.getOrCreateId(state.query)
-            temporalPropertyValueMatch(state.query.nodeOps, n.getId, propId, start, end)
-          case (r: Relationship, start:Long, end:Long) => temporalPropertyValueMatch(state.query.relationshipOps, r.getId, propertyKey.getOrCreateId(state.query), start, end)
+            val availableIndexes = availableIndex4Max(state.query.nodeOps.getTemporalPropertyIndexes(), propId, start, end)
+            if(availableIndexes.nonEmpty){
+              temporalPropertyMaxByIndex(state.query.nodeOps, n.getId, propId, start, end, availableIndexes.head.getId.toInt)
+            }else{
+              temporalPropertyValueMax(state.query.nodeOps, n.getId, propId, start, end)
+            }
+          case (r: Relationship, start:Long, end:Long) =>
+            val propId = propertyKey.getOrCreateId(state.query)
+            val availableIndexes = availableIndex4Max(state.query.relationshipOps.getTemporalPropertyIndexes(), propId, start, end)
+            if(availableIndexes.nonEmpty){
+              temporalPropertyMaxByIndex(state.query.relationshipOps, r.getId, propId, start, end, availableIndexes.head.getId.toInt)
+            }else{
+              temporalPropertyValueMax(state.query.relationshipOps, r.getId, propId, start, end)
+            }
         }
     }
   }
 
-  def temporalPropertyValueMatch[T <: PropertyContainer](op: Operations[T], entityId: Long, propertyId: Int, start: Long, end: Long): Any = {
-    var min:Int = Int.MaxValue
-    for (t <- start.toInt to end.toInt){
-      val value = op.getTemporalProperty(entityId, propertyId, new org.neo4j.temporal.TimePoint(t))
-      value match {
-        case v: Int => if (min > v) min = v
-        case v: Long => if (min > v) min = v.toInt
-        case null => //do nothing if invalid (no value)
-      }
+
+  def availableIndex4Max(ops: Iterable[IndexMetaData], propId: Int, start: Long, end: Long): Iterable[IndexMetaData] = {
+    ops.filter(m=> m.isOnline &&
+      m.getType.getId>=4 && propId==m.getPropertyIdList.get(0) &&
+      m.getTimeStart.valInt() <= start && end <= m.getTimeEnd.valInt()
+    )
+  }
+
+  def temporalPropertyMaxByIndex[T <: PropertyContainer](op: Operations[T], entityId: Long, propertyId: Int, start: Long, end: Long, indexId: Int): Any = {
+    //TODO: correct max aggr type
+//    println("use index("+indexId+")")
+    val result = op.getTemporalPropertyAggrByIndex(entityId, propertyId, new org.neo4j.temporal.TimePoint(start), new org.neo4j.temporal.TimePoint(end), indexId)
+    if(result!=null) {
+      val v = result.asInstanceOf[AggregationIndexQueryResult].getMinMaxResult.get(1)
+      if(v!=null) v.getInt(0)
+      else null
     }
-    if(min==Int.MaxValue) null
-    else min
+    else null
+  }
+
+  def temporalPropertyValueMax[T <: PropertyContainer](op: Operations[T], entityId: Long, propertyId: Int, start: Long, end: Long): Any = {
+    //TODO: correct max aggr type
+    op.getTemporalPropertyAggr(entityId, propertyId, new org.neo4j.temporal.TimePoint(start), new org.neo4j.temporal.TimePoint(end), 0)
   }
 
   override protected def calculateType(symbols: SymbolTable): CypherType = CTInteger

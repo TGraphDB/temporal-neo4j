@@ -36,6 +36,8 @@ import org.neo4j.graphdb._
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.temporal.TimePoint
+import org.neo4j.tooling.GlobalGraphOperations
 
 import scala.collection.mutable
 import scala.collection.mutable.ListBuffer
@@ -52,27 +54,27 @@ class ActualCostCalculationTest extends CypherFunSuite {
     def startSetup(queryId: AnyRef, pipe: Pipe) {}
     def startStep(queryId: AnyRef, pipe: Pipe) {}
   }
-  private val N = 100000
+  private val N = 1000
   private val STEPS = 100
   private val LABEL = DynamicLabel.label("L")
   private val PROPERTY = "prop"
   private val RELATIONSHIP = "REL"
 
   test("do the test") {
-    val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
-    val graph: GraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File(path))
+//    val path = Files.createTempDirectory("apa").toFile.getAbsolutePath
+    val graph: GraphDatabaseService = new GraphDatabaseFactory().newEmbeddedDatabase(new File("D:/tgraph/testdb"))
     try {
-      graph.createIndex(LABEL, PROPERTY)
+//      graph.createIndex(LABEL, PROPERTY)
       val results = ResultTable.empty
       val chunk = N / STEPS
       for (count <- 1 to STEPS) {
-        setUpDb(graph, chunk)
-
-        results.addAll("AllNodeScan", runSimulation(graph, allNodes))
-        results.addAll("NodeByLabelScan", runSimulation(graph, labelScan))
-        results.addAll("NodeIndexSeek", runSimulation(graph, indexSeek(graph)))
+//        setUpDb(graph, chunk)
+//        setUpDBTemporalProp(graph)
+//        results.addAll("AllNodeScan", runSimulation(graph, allNodes))
+//        results.addAll("NodeByLabelScan", runSimulation(graph, labelScan))
+//        results.addAll("NodeIndexSeek", runSimulation(graph, indexSeek(graph)))
         results.addAll("RelIdSeekByTemporalIndex", runSimulation(graph, temporalIndex(graph)))
-        results.addAll("Expand", expandResult(graph))
+//        results.addAll("Expand", expandResult(graph))
       }
 
       results.normalizedResult.foreach {
@@ -199,19 +201,21 @@ class ActualCostCalculationTest extends CypherFunSuite {
       val resources: ExternalResource = mock[ExternalResource]
       val queryContext = new TransactionBoundQueryContext(graph.asInstanceOf[GraphDatabaseAPI], tx, true, graph.statement)(mock[IndexSearchMonitor])
       val state = new QueryState(queryContext, resources, params = Map.empty, decorator = NullPipeDecorator)
-      for (x <- 0 to 25) {
+//      for (x <- 0 to 1) {
         for (pipe <- pipes) {
           val start = System.currentTimeMillis()
           val numberOfRows = pipe.createResults(state).size
           val elapsed = System.currentTimeMillis() - start
-
+          println(elapsed+","+numberOfRows)
           //warmup
-          if (x > 4) results.append(DataPoint(elapsed, numberOfRows))
+//          if (x > 4)
+          results.append(DataPoint(elapsed, numberOfRows))
         }
-      }
+//      }
     }
     //remove fastest and slowest
-    results.sortBy(_.elapsed).slice(5, results.size - 5)
+    results.sortBy(_.elapsed).slice(1, results.size - 2)
+//    results
   }
 
   private def setUpDb(graph: GraphDatabaseService, chunkSize: Int) {
@@ -224,6 +228,17 @@ class ActualCostCalculationTest extends CypherFunSuite {
       }
     }
   }
+
+//  private def setUpDBTemporalProp(graph: GraphDatabaseService):Unit = {
+//    graph.withTx { tx =>
+//      val iter = GlobalGraphOperations.at(graph).getAllRelationships.iterator()
+//      while (iter.hasNext){
+//        val r = iter.next()
+//        r.setTemporalProperty("test", new TimePoint())
+//      }
+//    }
+//  }
+
 
   //create a database where each subsequent label is more frequent
   private def setupDbForJoins(graph: GraphDatabaseService, labels: Seq[String]) = {
@@ -270,16 +285,34 @@ class ActualCostCalculationTest extends CypherFunSuite {
   private def temporalIndex(graph: GraphDatabaseService) = {
     graph.withTx { _ =>
       val ctx = new TransactionBoundPlanContext(graph.statement, graph)
-      val literal = Literal(42)
+//      val literal = Literal(42)
 
-      val labelId = ctx.getOptLabelId(LABEL.name()).get
-      val propKeyId = ctx.getOptPropertyKeyId(PROPERTY).get
-      val labelToken = ast.LabelToken(LABEL.name(), LabelId(labelId))
-      val propertyKeyToken = ast.PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
+//      val labelId = ctx.getOptLabelId(LABEL.name()).get
+//      val propKeyId = ctx.getOptPropertyKeyId(PROPERTY).get
+//      val labelToken = ast.LabelToken(LABEL.name(), LabelId(labelId))
+//      val propertyKeyToken = ast.PropertyKeyToken(PROPERTY, PropertyKeyId(propKeyId))
 
-
-      RelIdSeekByTemporalIndexPipe("r", "s", "e", Parameter())
-      new NodeIndexSeekPipe(LABEL.name(), labelToken, propertyKeyToken, SingleQueryExpression(literal), IndexSeek)()
+      // 2010.5.2 9:00~11:00
+      Seq(
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 0, 10)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 10, 20)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 20, 40)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 40, 60)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 60, 80)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 80, 100)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 100, 200)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 200, 300)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 300, 400)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 400, 500)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 500, 600)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 600, 700)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 700, 800)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 800, 900)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 900, 1000)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 1000, 1100)(),
+        RelIdSeekByTemporalIndexPipe("r", "s", "e", 1272762000, 1272769200, "travel_time", 1100, 1200)()
+      )
+//      new NodeIndexSeekPipe(LABEL.name(), labelToken, propertyKeyToken, SingleQueryExpression(literal), IndexSeek)()
     }
   }
 

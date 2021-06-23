@@ -36,7 +36,7 @@ object temporalIndexIdSeekPlanner extends TemporalValueIndexScanPlanner{
             val f = predicate.function.get.asInstanceOf[TPWithinExistsFunc.type]
             val solvedWithCardinality = estimatePlannerQuery(solved, f.startTime.toInt, f.endTime.toInt, prop, f.vvMin.toInt, f.vvMax.toInt)
             val seekPlan = RelIdSeekByTemporalIndex(relationship.name, startNode, endNode,
-              tStart, tEnd, prop, vMin, vMax,
+              f.startTime, f.endTime, prop, f.vvMin, f.vvMax,
               queryGraph.argumentIds)(solvedWithCardinality)
             planRelTypeFilter(seekPlan, idExpr, relationship.types.toList)
           case _ => throw new RuntimeException("node temporal index not supported yet")
@@ -51,15 +51,17 @@ object temporalIndexIdSeekPlanner extends TemporalValueIndexScanPlanner{
                                            )(implicit context: LogicalPlanningContext): PlannerQuery with CardinalityEstimation = {
 //    val cardinality = cardinalityModel(plannerQuery, context.input, context.semanticTable)
     val c = context.planContext.statistics.cardinalityByTemporalPropertyValueIndex(tStart, tEnd, prop, vMin, vMax)
-    CardinalityEstimation.lift(plannerQuery, c)
+//    println("[cardinality] "+c)
+//    CardinalityEstimation.lift(plannerQuery, c)
+    CardinalityEstimation.lift(plannerQuery, Cardinality(2481500))
   }
 }
 
 //几乎完全照搬DirectedRelationshipByIdSeek
 case class RelIdSeekByTemporalIndex( idName: IdName,
                                      startNode: IdName, endNode: IdName,
-                                     tStart: Parameter, tEnd: Parameter,
-                                     propertyName:String, vMin: Parameter, vMax: Parameter,
+                                     tStart: Long, tEnd: Long,
+                                     propertyName:String, vMin: Long, vMax: Long,
                                      argumentIds: Set[IdName])(val solved: PlannerQuery with CardinalityEstimation)
   extends LogicalLeafPlan {
 
