@@ -117,6 +117,18 @@ public class TemporalIndexManager
         return TemporalPropertyStoreAdapter.getInstance();
     }
 
+    public void awaitIndexOnline(long indexId) throws InterruptedException {
+        while(true){
+            Thread.sleep(1000);
+            for(IndexMetaData m: nodeIndexes()){
+                if(m.getId()==indexId && m.isOnline()) return;
+            }
+            for(IndexMetaData m: relIndexes()){
+                if(m.getId()==indexId && m.isOnline()) return;
+            }
+        }
+    }
+
     public static class PropertyValueIntervalBuilder
     {
         private final TimePoint start;

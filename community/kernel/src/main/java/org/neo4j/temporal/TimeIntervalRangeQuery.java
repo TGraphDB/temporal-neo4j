@@ -6,6 +6,7 @@ import org.act.temporalProperty.query.aggr.TimeIntervalEntry;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.TreeSet;
 
 public abstract class TimeIntervalRangeQuery extends TemporalRangeQuery{
     protected TimePointL startTime;
@@ -42,10 +43,16 @@ public abstract class TimeIntervalRangeQuery extends TemporalRangeQuery{
         return returnValue();
     }
 
-    public static class Duration extends TimeIntervalRangeQuery {
+    public static class IntDuration extends TimeIntervalRangeQuery {
 
-        public Duration(TimePointL beginTime, TimePointL endTime){
+        public IntDuration(TimePointL beginTime, TimePointL endTime){
             super(beginTime, endTime);
+        }
+
+        @Override
+        public void setValueType(String valueType) {
+            super.setValueType(valueType);
+            assert "INT".equals(valueType);
         }
 
         private final Map<Object, Integer> duration = new HashMap<>();
@@ -58,6 +65,41 @@ public abstract class TimeIntervalRangeQuery extends TemporalRangeQuery{
                 duration.put(val, durationT);
             }else{
                 duration.put(val, sum + durationT);
+            }
+        }
+
+        public Object returnValue() {
+            return duration;
+        }
+    }
+
+    public static class FloatDuration extends TimeIntervalRangeQuery {
+        private final TreeSet<Float> interval;
+
+        public FloatDuration(TimePointL beginTime, TimePointL endTime, TreeSet<Float> intervalStarts){
+            super(beginTime, endTime);
+            this.interval = intervalStarts;
+        }
+
+        @Override
+        public void setValueType(String valueType) {
+            super.setValueType(valueType);
+            assert "FLOAT".equals(valueType);
+        }
+
+        private final Map<Object, Integer> duration = new HashMap<>();
+
+        @Override
+        public void onEntry(TimePointL beginTime, TimePointL endTime, Object val) {
+            int durationT = (int) (endTime.val() - beginTime.val() + 1);
+            Float grp = interval.floor((Float) val);
+            if(grp!=null) {
+                Integer sum = duration.get(grp);
+                if (sum == null) {
+                    duration.put(grp, durationT);
+                } else {
+                    duration.put(grp, sum + durationT);
+                }
             }
         }
 

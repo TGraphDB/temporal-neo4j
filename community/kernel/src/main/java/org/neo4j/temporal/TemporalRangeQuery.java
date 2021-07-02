@@ -53,7 +53,7 @@ public abstract class TemporalRangeQuery implements TimeRangeQuery
 
         @Override
         public boolean onNewEntry(long entityId, int propertyId, TimePointL beginTime, Object val) {
-            if(val!=lastVal) {
+            if(!Objects.equals(val, lastVal)) {
                 change++;
             }
             lastVal = val;
@@ -73,6 +73,23 @@ public abstract class TemporalRangeQuery implements TimeRangeQuery
             if (val != null) {
                 int vInt = (Integer) val;
                 if (max==null || vInt > max) max = vInt;
+            }
+            return true;
+        }
+
+        public Object onReturn() {
+            return max;
+        }
+    }
+
+    public static class MaxFloat extends TemporalRangeQuery {
+        private Float max = null;
+
+        @Override
+        public boolean onNewEntry(long entityId, int propertyId, TimePointL beginTime, Object val) {
+            if (val != null) {
+                float v = (Float) val;
+                if (max==null || v > max) max = v;
             }
             return true;
         }
