@@ -26,6 +26,7 @@ class LRUCache[K, V](val size: Int) extends ((K, => V) => V) {
   private val inner = new ConcurrentLinkedHashMap.Builder[K, V]
     .maximumWeightedCapacity(size)
     .build()
+//  println("cache init")
 
   def getOrElseUpdate(key: K, f: => V): V = {
     val value = inner.get(key)
@@ -34,6 +35,7 @@ class LRUCache[K, V](val size: Int) extends ((K, => V) => V) {
       val createdValue = f
       val previousValue = inner.putIfAbsent(key, createdValue)
       if (previousValue == null) createdValue else previousValue
+//      createdValue
     } else {
       value
     }
@@ -46,6 +48,7 @@ class LRUCache[K, V](val size: Int) extends ((K, => V) => V) {
       val createdValue = f(key)
       val previousValue = inner.putIfAbsent(key, createdValue)
       if (previousValue == null) createdValue else previousValue
+//      createdValue
     } else {
       value
     }
@@ -53,7 +56,10 @@ class LRUCache[K, V](val size: Int) extends ((K, => V) => V) {
 
   def get(key: K): Option[V] = Option(inner.get(key))
 
-  def put(key: K, value: V) = inner.put(key, value)
+  def put(key: K, value: V) = {
+    inner.put(key, value)
+//    value
+  }
 
   def +=(kv: (K, V)) = put(kv._1, kv._2)
 

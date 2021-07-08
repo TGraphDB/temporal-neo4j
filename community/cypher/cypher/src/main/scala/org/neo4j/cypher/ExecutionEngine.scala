@@ -239,7 +239,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logProvider: LogProvider = Nu
     new CypherCompiler(graph, kernel, kernelMonitors, version, planner, runtime, useErrorsOverWarnings, idpMaxTableSize, idpIterationDuration, logProvider)
   }
 
-  private def getPlanCacheSize: Int =
+  private def getPlanCacheSize: Int = //0
     optGraphSetting[java.lang.Integer](
       graph, GraphDatabaseSettings.query_cache_size,
       GraphDatabaseSettings.query_cache_size.getDefaultValue.toInt

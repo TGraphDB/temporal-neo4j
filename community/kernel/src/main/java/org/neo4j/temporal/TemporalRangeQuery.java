@@ -3,9 +3,11 @@ package org.neo4j.temporal;
 import org.act.temporalProperty.impl.InternalEntry;
 import org.act.temporalProperty.impl.InternalKey;
 import org.act.temporalProperty.impl.ValueType;
+import org.act.temporalProperty.meta.ValueContentType;
 import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.range.TimeRangeQuery;
 import org.act.temporalProperty.util.Slice;
+import org.act.temporalProperty.util.TemporalPropertyValueConvertor;
 
 import java.util.Comparator;
 import java.util.Objects;
@@ -16,18 +18,10 @@ import java.util.Objects;
 
 public abstract class TemporalRangeQuery implements TimeRangeQuery
 {
-    private CallBack callBack = null;
+    ValueContentType vType;
     @Override
     public void setValueType(String valueType) {
-        switch (valueType){
-            case "INT":
-                this.callBack = new CallBack(){ @Override public Object readSlice(Slice slice) { return slice.getInt(0); }};
-                return;
-            case "LONG": this.callBack = new CallBack(){ @Override public Object readSlice(Slice slice) { return slice.getLong(0); }}; return;
-            case "FLOAT": this.callBack = new CallBack(){ @Override public Object readSlice(Slice slice) { return slice.getFloat(0); }}; return;
-            case "DOUBLE": this.callBack = new CallBack(){ @Override public Object readSlice(Slice slice) { return slice.getDouble(0); }}; return;
-            case "STRING": this.callBack = new CallBack(){ @Override public Object readSlice(Slice slice) { return new String(slice.getBytes()); }}; return;
-        }
+        this.vType = ValueContentType.valueOf(valueType);
     }
 
     @Override
@@ -37,12 +31,8 @@ public abstract class TemporalRangeQuery implements TimeRangeQuery
         if(k.getValueType()==ValueType.INVALID){
             return onNewEntry(k.getEntityId(), k.getPropertyId(), k.getStartTime(), null);
         }else{
-            return onNewEntry(k.getEntityId(), k.getPropertyId(), k.getStartTime(), callBack.readSlice(v));
+            return onNewEntry(k.getEntityId(), k.getPropertyId(), k.getStartTime(), TemporalPropertyValueConvertor.fromSlice(vType, v));
         }
-    }
-
-    private interface CallBack{
-        Object readSlice(Slice slice);
     }
 
     public abstract boolean onNewEntry(long entityId, int propertyId, TimePointL time, Object val);
