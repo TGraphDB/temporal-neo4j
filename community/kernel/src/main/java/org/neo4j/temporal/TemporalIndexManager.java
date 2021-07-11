@@ -97,7 +97,7 @@ public class TemporalIndexManager
         return bridge.get().readOperations();
     }
 
-    private int proName2Id( String name )
+    public int proName2Id( String name )
     {
         return read().propertyKeyGetForName( name );
     }
