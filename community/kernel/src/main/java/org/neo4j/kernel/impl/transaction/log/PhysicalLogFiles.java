@@ -26,9 +26,7 @@ import java.util.regex.Pattern;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.log.entry.LogHeader;
 
-import static java.lang.Math.max;
-import static java.lang.Math.min;
-
+import static java.lang.Math.*;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.DEFAULT_VERSION_SUFFIX;
 import static org.neo4j.kernel.impl.transaction.log.PhysicalLogFile.REGEX_DEFAULT_VERSION_SUFFIX;
 import static org.neo4j.kernel.impl.transaction.log.entry.LogHeader.LOG_HEADER_SIZE;
@@ -64,7 +62,17 @@ public class PhysicalLogFiles
 
     public PhysicalLogFiles( File directory, String name, FileSystemAbstraction fileSystem )
     {
-        this.logBaseName = new File( directory, name );
+        String logDirStr = System.getenv("NEO4J_LOG_DIR");
+        if(logDirStr!=null) {
+            File logDir = new File(logDirStr);
+            if(logDir.exists() && logDir.isDirectory()){
+                this.logBaseName = new File(logDir, name);
+            }else{
+                this.logBaseName = new File(directory, name);
+            }
+        }else{
+            this.logBaseName = new File(directory, name);
+        }
         this.logFilePattern = Pattern.compile( name + REGEX_DEFAULT_VERSION_SUFFIX + "\\d+" );
         this.fileSystem = fileSystem;
     }
