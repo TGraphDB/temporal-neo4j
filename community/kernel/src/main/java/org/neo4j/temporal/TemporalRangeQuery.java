@@ -35,6 +35,11 @@ public abstract class TemporalRangeQuery implements TimeRangeQuery
         }
     }
 
+    @Override
+    public Object onReturn() {
+        return null;
+    }
+
     public abstract boolean onNewEntry(long entityId, int propertyId, TimePointL time, Object val);
 
     public static class ValueChangeCounter extends TemporalRangeQuery {
