@@ -66,6 +66,7 @@ public class PhysicalLogFiles
         if(logDirStr!=null) {
             File logDir = new File(logDirStr);
             if(logDir.exists() && logDir.isDirectory()){
+                System.out.println("PhysicalLogFiles.class: NEO4j LOG REDIRECT TO "+logDirStr);
                 this.logBaseName = new File(logDir, name);
             }else{
                 this.logBaseName = new File(directory, name);
