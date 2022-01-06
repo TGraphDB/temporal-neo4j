@@ -500,7 +500,7 @@ public class NodeProxy extends PropertyContainerProxy implements Node
             int propertyKeyId = statement.readOperations().propertyKeyGetForName( key );
             TemporalPropertyReadOperation query = new TemporalPropertyReadOperation( this.getId(), propertyKeyId, startTime, endTime, indexId );
             Object val = statement.readOperations().nodeGetTemporalProperty( query );
-            if(val!=null && val instanceof AggregationIndexQueryResult) return (AggregationIndexQueryResult) val;
+            if(val instanceof AggregationIndexQueryResult) return (AggregationIndexQueryResult) val;
             else throw new TPSNHException( "null or wrong type" );
         }
         catch ( EntityNotFoundException | PropertyNotFoundException e )

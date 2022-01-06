@@ -613,7 +613,7 @@ public class StateHandlingStatementOperations
 
     private ValueContentType decodeTemporalPropertyMeta( Object meta )
     {
-        if ( meta == null || !(meta instanceof String) )
+        if (!(meta instanceof String))
         {
             throw new TPSRuntimeException( "not a temporal property!" );
         }
