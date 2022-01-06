@@ -2,6 +2,7 @@ package org.neo4j.temporal;
 
 import org.act.temporalProperty.index.IndexType;
 import org.act.temporalProperty.index.value.IndexMetaData;
+import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.ValueGroupingMap;
 import org.apache.commons.lang3.tuple.Triple;
 
@@ -12,6 +13,7 @@ import java.util.Map;
 
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.store.TemporalPropertyStoreAdapter;
@@ -41,6 +43,32 @@ public class TemporalIndexManager
     public List<IndexMetaData> nodeIndexes()
     {
         return tpStore().getNodeStore().listIndex();
+    }
+
+    public List<TemporalIndexMetaData> allIndex()
+    {
+        List<TemporalIndexMetaData> result = new ArrayList<>();
+        try {
+            for (IndexMetaData i : tpStore().getNodeStore().listIndex()) {
+                result.add(to(i, true));
+            }
+            for (IndexMetaData i : tpStore().getRelStore().listIndex()) {
+                result.add(to(i, false));
+            }
+        } catch (PropertyKeyIdNotFoundKernelException e) {
+            throw new IllegalStateException("prop name not found!", e);
+        }
+        return result;
+    }
+
+    private TemporalIndexMetaData to(IndexMetaData m, boolean isNode) throws PropertyKeyIdNotFoundKernelException {
+        List<Triple<String, Integer, String>> props = new ArrayList<>();
+        for(int i=0; i<m.getPropertyIdList().size(); i++){
+            int propId = m.getPropertyIdList().get(i);
+            props.add(Triple.of(proId2Name(propId), propId, m.getValueTypes().get(i).name()));
+        }
+        return new TemporalIndexMetaData(isNode, m.getId(), m.getType().name(), props,
+                m.getTimeStart(), m.getTimeEnd(), m.getFilesByTime(TimePointL.Init, TimePointL.Now).size());
     }
 
     public boolean nodeDropIndex(long indexId){ return tpStore().getNodeStore().deleteIndex(indexId);}
@@ -100,6 +128,10 @@ public class TemporalIndexManager
     public int proName2Id( String name )
     {
         return read().propertyKeyGetForName( name );
+    }
+
+    public String proId2Name( int proId ) throws PropertyKeyIdNotFoundKernelException {
+        return read().propertyKeyGetName(proId);
     }
 
     private List<Integer> proName2Id( String[] names )

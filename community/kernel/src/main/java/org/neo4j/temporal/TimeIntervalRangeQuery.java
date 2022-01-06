@@ -1,5 +1,6 @@
 package org.neo4j.temporal;
 
+import com.google.common.base.Converter;
 import org.act.temporalProperty.query.TimePointL;
 import org.act.temporalProperty.query.aggr.TimeIntervalEntry;
 
@@ -21,7 +22,7 @@ public abstract class TimeIntervalRangeQuery extends TemporalRangeQuery{
     }
 
     abstract public void onEntry(TimePointL beginTime, TimePointL endTime, Object val);
-    abstract public Object returnValue();
+    public Object returnValue(){return null;}
 
     @Override
     public boolean onNewEntry(long entityId, int propertyId, TimePointL time, Object val) {
@@ -108,5 +109,44 @@ public abstract class TimeIntervalRangeQuery extends TemporalRangeQuery{
         }
     }
 
+    public static class Duration<E> extends TimeIntervalRangeQuery {
+        private final TreeSet<E> interval;
+        private final Converter<Object, E> conv;
+
+        public Duration(TimePointL beginTime, TimePointL endTime, TreeSet<E> intervalStarts, Converter<Object, E> conv){
+            super(beginTime, endTime);
+            this.interval = intervalStarts;
+            this.conv = conv;
+        }
+
+        @Override
+        public void setValueType(String valueType) {
+            super.setValueType(valueType);
+        }
+
+        private final Map<E, Integer> duration = new HashMap<>();
+
+        @Override
+        public void onEntry(TimePointL beginTime, TimePointL endTime, Object val) {
+            int durationT = (int) (endTime.val() - beginTime.val() + 1);
+            E grp = interval.floor(conv.conv(val));
+            if(grp!=null) {
+                Integer sum = duration.get(grp);
+                if (sum == null) {
+                    duration.put(grp, durationT);
+                } else {
+                    duration.put(grp, sum + durationT);
+                }
+            }
+        }
+
+        public Object returnValue() {
+            return duration;
+        }
+    }
+
+    public interface Converter<A,B> {
+        B conv(A from);
+    }
 
 }
