@@ -62,7 +62,7 @@ public class PhysicalLogFiles
 
     public PhysicalLogFiles( File directory, String name, FileSystemAbstraction fileSystem )
     {
-        String logDirStr = System.getenv("NEO4J_LOG_DIR");
+        String logDirStr = System.getenv("DIR_NEO4J_LOG");
         if(logDirStr!=null) {
             File logDir = new File(logDirStr);
             if(logDir.exists() && logDir.isDirectory()){
