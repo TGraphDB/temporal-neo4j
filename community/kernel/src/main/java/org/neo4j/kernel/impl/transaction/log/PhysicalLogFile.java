@@ -106,7 +106,12 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         // Move to the end
         channel.position( channel.size() );
 
-        writer = new PhysicalWritableLogChannel( channel );
+        String noLog = System.getenv("CONFIG_NEO4J_NO_LOG");
+        if(noLog!=null) {
+            writer = new PhysicalWritableLogChannel.NoLog(channel);
+        }else {
+            writer = new PhysicalWritableLogChannel(channel);
+        }
     }
 
     // In order to be able to write into a logfile after life.stop during shutdown sequence

@@ -33,7 +33,7 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
     private final ByteBuffer buffer;
 
     private volatile boolean closed;
-    private LogVersionedStoreChannel channel;
+    protected LogVersionedStoreChannel channel;
 
     public PhysicalWritableLogChannel( LogVersionedStoreChannel channel )
     {
@@ -169,5 +169,59 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
     {
         emptyBufferIntoChannelAndClearIt();
         closed = true;
+    }
+
+    public static class NoLog extends PhysicalWritableLogChannel{
+
+        public NoLog(LogVersionedStoreChannel channel) {
+            super(channel);
+        }
+
+        @Override
+        public Flushable emptyBufferIntoChannelAndClearIt() throws IOException {
+            return new Flushable() {
+                @Override public void flush() throws IOException { }
+            };
+        }
+
+        @Override
+        public WritableLogChannel put(byte value) throws IOException {
+            return this;
+        }
+
+        @Override
+        public WritableLogChannel putShort(short value) throws IOException {
+            return this;
+        }
+
+        @Override
+        public WritableLogChannel putInt(int value) throws IOException {
+            return this;
+        }
+
+        @Override
+        public WritableLogChannel putLong(long value) throws IOException {
+            return this;
+        }
+
+        @Override
+        public WritableLogChannel putFloat(float value) throws IOException {
+            return this;
+        }
+
+        @Override
+        public WritableLogChannel putDouble(double value) throws IOException {
+            return this;
+        }
+
+        @Override
+        public WritableLogChannel put(byte[] value, int length) throws IOException {
+            return this;
+        }
+
+        @Override
+        public void close() throws IOException {
+
+        }
     }
 }
