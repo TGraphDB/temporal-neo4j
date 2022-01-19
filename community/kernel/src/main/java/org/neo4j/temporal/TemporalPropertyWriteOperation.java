@@ -23,7 +23,7 @@ public class TemporalPropertyWriteOperation
         {
             valueType = ValueType.INVALID;
         }else{
-            valueType = ValueType.fromValueContentType( TemporalPropertyValueConvertor.str2type( value.getClass().getSimpleName() ) );
+            valueType = ValueType.fromValue( value );
         }
         this.startKey = new InternalKey( proId, entityId, start, valueType);
         this.end = end;
