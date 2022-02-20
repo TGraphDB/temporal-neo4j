@@ -94,4 +94,21 @@ public abstract class TemporalRangeQuery implements TimeRangeQuery
         }
     }
 
+    public static class MaxValue extends TemporalRangeQuery {
+        private Comparable max = null;
+
+        @Override
+        public boolean onNewEntry(long entityId, int propertyId, TimePointL beginTime, Object val) {
+            if (val instanceof Comparable) {
+                Comparable v = (Comparable) val;
+                if (max==null || v.compareTo(max)>0) max = v;
+            }
+            return true;
+        }
+
+        public Object onReturn() {
+            return max;
+        }
+    }
+
 }
