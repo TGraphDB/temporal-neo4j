@@ -23,7 +23,6 @@ import org.neo4j.kernel.impl.store.TemporalPropertyStoreAdapter;
  */
 public class TemporalIndexManager
 {
-    private static TemporalIndexManager self;
     private final ThreadToStatementContextBridge bridge;
 
     public TemporalIndexManager( ThreadToStatementContextBridge bridge )
@@ -33,11 +32,7 @@ public class TemporalIndexManager
 
     public static TemporalIndexManager getInstance( ThreadToStatementContextBridge bridge )
     {
-        if ( self == null )
-        {
-            self = new TemporalIndexManager( bridge );
-        }
-        return self;
+        return new TemporalIndexManager( bridge );
     }
 
     public List<IndexMetaData> nodeIndexes()
